@@ -1,0 +1,4 @@
+{
+    "sources": ["D:/git/","D:/home/"],
+    "excludes": ["epod/"]
+}
