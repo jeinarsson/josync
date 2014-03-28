@@ -1,4 +1,6 @@
 {
-    "sources": ["D:/git/","D:/home/"],
-    "excludes": ["epod/"]
+    "name": "joel_laptop",
+    "sources": ["/cygdrive/d/traveling"],
+    "excludes": ["epod/"],
+    "target": "/cygdrive/d/temp/backup"
 }
