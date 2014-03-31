@@ -1,0 +1,3 @@
+vshadow -p -nw -script=SETVAR_tmp.cmd
+call SETVAR_tmp.cmd
+vshadow -el=%SHADOW_ID_1%,D:\temp\shadow

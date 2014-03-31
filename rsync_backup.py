@@ -10,7 +10,7 @@ from threading import Thread
 
 
 def log_worker(stdout):
-    ''' needs to be in a thread so we can read the stdout w/o blocking '''
+    '''Read output in a thread.'''
     while True:
         output = non_block_read(stdout).strip()
         if output != '':
@@ -18,7 +18,7 @@ def log_worker(stdout):
 
 
 def non_block_read(output):
-    ''' even in a thread, a normal read with block until the buffer is full '''
+    '''Reading non-blocking'''
     fd = output.fileno()
     fl = fcntl.fcntl(fd, fcntl.F_GETFL)
     fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NONBLOCK)
@@ -35,7 +35,7 @@ def main():
         config = json.loads(json_data)
 
     target = '{}/{}-{}'.format(config['target'],config['name'],time.strftime('%Y-%m-%d-%H%M%S'))
-    rsync_options = ['-avzh','--delete','--verbose']
+    rsync_options = ['-avzh','--chmod=ug=rwx,o=rx','--delete','--verbose']
 
     # TODO: clean sources from bad content
 
@@ -44,11 +44,7 @@ def main():
             raise Exception('Source directories must not end with /')
         print "Backing up {} to {}.".format(s,target)
         rsync_call = ['rsync']+rsync_options+[s,target]
-        # output = sp.call(rsync_call,stdout=sp.PIPE,stderr=sp.PIPE)
-        rsync_process = sp.Popen(
-            rsync_call,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE)
+        rsync_process = sp.Popen(rsync_call,stdout=subprocess.PIPE,stderr=subprocess.PIPE)
 
         thread = Thread(target=log_worker, args=[rsync_process.stdout], name="rsync_output_thread")
         thread.daemon = True

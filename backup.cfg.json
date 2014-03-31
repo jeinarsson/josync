@@ -1,6 +1,6 @@
 {
     "name": "joel_laptop",
-    "sources": ["/cygdrive/d/traveling"],
+    "sources": ["/cygdrive/d/traveling","/cygdrive/d/git"],
     "excludes": ["epod/"],
     "target": "/cygdrive/d/temp/backup"
 }
