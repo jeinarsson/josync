@@ -1,7 +1,7 @@
 {
     "name": "joel_laptop",
-    "cygwin_bindir": "C:/cygwin/bin",
-    "sources": ["/cygdrive/d/traveling"],
+    "cygwin_bindir": "C:/cygwin64/bin",
+    "sources": ["D:/traveling"],
     "excludes": ["epod/"],
-    "target": "/cygdrive/d/temp/backup"
+    "target": "D:/temp/backup"
 }

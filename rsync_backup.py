@@ -17,22 +17,13 @@ def print_output(out):
     out.close()
 
 
-# def non_block_read(output):
-#     '''Reading non-blocking'''
-#     fd = output.fileno()
-#     fl = fcntl.fcntl(fd, fcntl.F_GETFL)
-#     fcntl.fcntl(fd, fcntl.F_SETFL, fl | os.O_NONBLOCK)
-#     try:
-#         return output.read()
-#     except:
-#         return ''
-
-
 def main():
     # Read config file
     with open('backup.cfg.json') as f:
         json_data=f.read()
         config = json.loads(json_data)
+
+
 
     target = '{}/{}-{}'.format(config['target'],config['name'],time.strftime('%Y-%m-%d-%H%M%S'))
     rsync_options = ['-avzh','--chmod=ug=rwx,o=rx','--delete','--verbose']
@@ -43,10 +34,16 @@ def main():
         if s[-1]=='/':
             raise Exception('Source directories must not end with /')
         print "Backing up {} to {}.".format(s,target)
+
+        cygpath = '{}/cygpath.exe'.format(config['cygwin_bindir'])
         cygwin_bash = '{}/bash.exe'.format(config['cygwin_bindir'])
+        cygpath_process = sp.Popen([cygpath,s],stdout=sp.PIPE)
+        print cygpath_process.communicate()[0]
+        exit()
+
         rsync_call = [cygwin_bash,'--login','-c']+[' '.join(['rsync']+rsync_options+[s,target])]
         print "rsync call is:\n"+' '.join(rsync_call)
-        rsync_process = sp.Popen(rsync_call,stdout=subprocess.PIPE,stderr=subprocess.PIPE,bufsize=1,close_fds=ON_POSIX)
+        rsync_process = sp.Popen(rsync_call,stdout=sp.PIPE,stderr=sp.PIPE,bufsize=1,close_fds=ON_POSIX)
 
         thread_err = Thread(target=print_output, args=(rsync_process.stderr,), name="rsync_error_thread")
         thread_err.daemon = True
