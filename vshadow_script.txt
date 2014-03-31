@@ -1,3 +1,16 @@
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% USE vshadow TO CREATE SHADOW COPY
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Executable: C:\Program Files\Microsoft SDKs\Windows\v7.0\Bin\x64\vsstools\vshadow.exe
+(Run as administrator)
+
+Commands:
 vshadow -p -nw -script=SETVAR_tmp.cmd
 call SETVAR_tmp.cmd
 vshadow -el=%SHADOW_ID_1%,D:\temp\shadow
+
+Do backup magic reading from shadow copy!
+
+vshadow -ds=%SHADOW_ID_1%
