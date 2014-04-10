@@ -1,5 +1,3 @@
 {
-    "sources": ["D:/git"],
-    "excludes": ["epod/"],
-    "target": "D:/temp/backup"
+    "cygwin_bin_path": "C:/cygwin/bin"
 }

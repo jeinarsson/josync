@@ -1,19 +1,18 @@
 import utils
 import json
-
+import os
 
 class Job(object):
     """Parent class for backup jobs."""
     def __init__(self,job_file):
         super(Job, self).__init__()
         with open(job_file) as f:
-            json_data=f.read()
-            job_params = json.loads(json_data)
+            self.params = json.loads(f.read())
 
         # Check config parameters
         try:
-            self.target = job_params['target']
-            self.win_sources = job_params['sources']
+            self.target = self.params['target']
+            self.win_sources = self.params['sources']
         except KeyError as e:
             print "One of the necessary job parameters were not found."
             raise
@@ -29,8 +28,8 @@ class SyncJob(Job):
     """Simple backup syncing dir to dir."""
     def __init__(self,job_file):
         super(SyncJob, self).__init__(job_file)
-        if 'datetime_format' not in config:
-            self.datetime_format = '%Y-%m-%d-%H%M%S'
+        if 'datetime_format' not in self.params:
+            self.params['datetime_format'] = '%Y-%m-%d-%H%M%S'
 
     def backup_sources(self):
         target = '{}/{}-{}'.format(config['target'],config['name'],time.strftime('%Y-%m-%d-%H%M%S'))
