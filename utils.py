@@ -10,9 +10,6 @@ def read_config(conf_file):
 
     # Check config parameters
     try:
-        name = config['name']
-        target = config['target']
-        win_sources = config['sources']
         config['cygpath_bin'] = '{}/cygpath.exe'.format(config['cygwin_bin_path'])
     except KeyError as e:
         print "One of the necessary configuration parameters were not found."
@@ -21,11 +18,6 @@ def read_config(conf_file):
         raise ValueError("The provided cygwin bin path is not a directory. Path given: {}.".format(cygwin_bin_path))
     if not os.path.isfile(self.cygpath):
         raise IOError("cygpath.exe could not be found at {}.".format(self.cygpath))
-    if not all([os.path.isdir(s) for s in win_sources]):
-        raise IOError("One or more source directories does not exist.")
-    if not os.path.isdir(target):
-        raise IOError("Target directory does not exist.")
-
 
 
 def get_cygwin_path(path):
