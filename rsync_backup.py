@@ -4,6 +4,7 @@ import subprocess as sp
 import time
 import sys
 import os
+import utils
 
 class CygwinExec(object):
     """Class to execute commands and programs in cygwin."""
@@ -13,12 +14,9 @@ class CygwinExec(object):
             raise ValueError("The provided cygwin bin path is not a directory. Path given: {}.".format(cygwin_bin_path))
 
         self.cygpath = '{}/cygpath.exe'.format(cygwin_bin_path)
-        self.bash = '{}/bash.exe'.format(cygwin_bin_path)
 
         if not os.path.isfile(self.cygpath):
             raise IOError("cygpath.exe could not be found at {}.".format(self.cygpath))
-        if not os.path.isfile(self.bash):
-            raise IOError("bash.exe could not be found at {}.".format(self.bash))
 
     def get_cygwin_path(self,path):
         """Return cygwin path """
@@ -29,7 +27,7 @@ class CygwinExec(object):
         if not len(cygwin_path) > 0:
             raise IOError("No cygwin path was found for {}.".format(path))
         else:
-            return cygwin_path 
+            return cygwin_path
 
 class Backup(object):
     """Class to handle backup through rsync in cygwin."""
@@ -52,7 +50,7 @@ class Backup(object):
             print "One of the necessary configuration parameters were not found."
             raise
         if not all([os.path.isdir(s) for s in self.win_sources]):
-            raise IOError("One or more source directories does not exist.") 
+            raise IOError("One or more source directories does not exist.")
         if not os.path.isdir(self.target):
             raise IOError("Target directory does not exist.")
         if 'datetime_format' not in config:
