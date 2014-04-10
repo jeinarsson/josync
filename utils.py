@@ -41,13 +41,26 @@ def get_cygwin_path(path):
     else:
         return cygwin_path
 
+def shell_execute(command):
+    process = sp.Popen(command, stdout=sp.PIPE)
+    return process.communicate()[0].strip()    
 
+    
 @contextmanager
-def volume_shadow(path):
+def volume_shadow(drive):
+    
     # create and mount volume shadow
-
+    vshadow = config['vshadow_bin']
+    vshadow_output = shell_execute([vshadow, '-p', '-nw', drive])
+    # TODO parse guid
+    shadow_guid = ""
+    # TODO invent clever temp path
     shadow_path = ""
+    vshadow_output = shell_execute([vshadow, '-el={},{}'.format(shadow_guid, shadow_path)])
+
     try:
         yield shadow_path
     finally:
         # dismount and delete volume shadow
+        vshadow_output = shell_execute([vshadow, '-ds={}'.format(shadow_guid)])
+        #TODO parse output for success
