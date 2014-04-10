@@ -26,8 +26,7 @@ def get_cygwin_path(path):
     if not os.path.exists(path):
         raise ValueError("The given path does not exist. Path given: {}.".format(path))
     cygpath = config['cygpath_bin']
-    cygpath_process = sp.Popen([cygpath,path],stdout=sp.PIPE)
-    cygwin_path = cygpath_process.communicate()[0].strip()
+    cygwin_path = shell_execute([cygpath,path])
     if not len(cygwin_path) > 0:
         raise IOError("No cygwin path was found for {}.".format(path))
     else:
@@ -56,3 +55,6 @@ def volume_shadow(drive):
         # dismount and delete volume shadow
         vshadow_output = shell_execute([vshadow, '-ds={}'.format(shadow_guid)])
         #TODO parse output for success
+
+with volume_shadow("c:") as shadow_path:
+    print shadow_path
