@@ -1,6 +1,7 @@
 import os
 import json
 import subprocess as sp
+from contextlib import contextmanager
 
 def read_config(conf_file):
     """Read config file and check values"""
@@ -39,3 +40,14 @@ def get_cygwin_path(path):
         raise IOError("No cygwin path was found for {}.".format(path))
     else:
         return cygwin_path
+
+
+@contextmanager
+def volume_shadow(path):
+    # create and mount volume shadow
+
+    shadow_path = ""
+    try:
+        yield shadow_path
+    finally:
+        # dismount and delete volume shadow
