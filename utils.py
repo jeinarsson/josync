@@ -5,11 +5,10 @@ from contextlib import contextmanager
 
 config = {}
 
-def read_config(conf_file):
+def read_config(default_cfg,user_cfg):
     """Read config file and check values"""
-    with open(conf_file) as f:
-        config_in = json.loads(f.read())
-    config.update(config_in.items())
+    update_config(default_cfg)
+    update_config(user_cfg)
 
     # Check config parameters
     try:
@@ -19,6 +18,13 @@ def read_config(conf_file):
         raise
     if not os.path.isfile(config['cygpath_bin']):
         raise IOError("cygpath.exe could not be found at {}.".format(config['cygpath_bin']))
+
+
+def update_config(config_file):
+    """Update the module config dict from a config file."""
+    with open(config_file) as f:
+        config_in = json.loads(f.read())
+    config.update(config_in.items())
 
 
 def get_cygwin_path(path):
@@ -34,12 +40,12 @@ def get_cygwin_path(path):
 
 def shell_execute(command):
     process = sp.Popen(command, stdout=sp.PIPE)
-    return process.communicate()[0].strip()    
+    return process.communicate()[0].strip()
 
-    
+
 @contextmanager
 def volume_shadow(drive):
-    
+
     # create and mount volume shadow
     vshadow = config['vshadow_bin']
     vshadow_output = shell_execute([vshadow, '-p', '-nw', drive])
@@ -56,5 +62,5 @@ def volume_shadow(drive):
         vshadow_output = shell_execute([vshadow, '-ds={}'.format(shadow_guid)])
         #TODO parse output for success
 
-with volume_shadow("c:") as shadow_path:
-    print shadow_path
+# with volume_shadow("c:") as shadow_path:
+#     print shadow_path
