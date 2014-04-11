@@ -1,5 +1,0 @@
-{
-    "sources": ["D:/git"],
-    "excludes": ["epod/"],
-    "target": "D:/temp/backup"
-}
