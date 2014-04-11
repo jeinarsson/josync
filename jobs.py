@@ -9,6 +9,10 @@ class Job(object):
         with open(job_file) as f:
             self.params = json.loads(f.read())
 
+        if 'name' not in self.params:
+            filename,filext = os.path.splitext(os.path.basename(job_file))
+            self.params['name'] =filename
+
         # Check config parameters
         try:
             self.target = self.params['target']
@@ -22,17 +26,15 @@ class Job(object):
             raise IOError("Target directory does not exist.")
 
     def run(self):
-        pass
+        raise NotImplementedError("Run method of job was not implemented.")
 
 class SyncJob(Job):
     """Simple backup syncing dir to dir."""
     def __init__(self,job_file):
         super(SyncJob, self).__init__(job_file)
-        if 'datetime_format' not in self.params:
-            self.params['datetime_format'] = '%Y-%m-%d-%H%M%S'
 
-    def backup_sources(self):
-        target = '{}/{}-{}'.format(config['target'],config['name'],time.strftime('%Y-%m-%d-%H%M%S'))
+    def run(self):
+        target = self.params['target']
         rsync_options = ['-avzh','--chmod=ug=rwx,o=rx','--delete','--verbose']
 
         for s in config['sources']:
@@ -41,8 +43,31 @@ class SyncJob(Job):
                 s = s[:-1]
             print "Backing up {} to {}.".format(s,target)
 
-            rsync_call = [cygwin_bash,'--login','-c']+[' '.join(['rsync']+rsync_options+[s,target])]
+            rsync_call = ['rsync']+rsync_options+[s,target]
             print "rsync call is:\n"+' '.join(rsync_call)
-            rsync_process = sp.Popen(rsync_call)
 
+            rsync_process = sp.Popen(rsync_call)
+            rsync_process.wait()
+
+class TimelineJob(Job):
+    """Backups to a timeline of snapshots."""
+    def __init__(self, job_file):
+        super(TimelineJob, self).__init__(job_file)
+        if 'datetime_format' not in self.params:
+            self.params['datetime_format'] = '%Y-%m-%d-%H%M%S'
+
+    def run(self):
+        target = '{}/{}-{}'.format(self.params['target'],self.params['name'],self.params['datetime_format'])
+        rsync_options = ['-avzh','--chmod=ug=rwx,o=rx','--delete','--verbose']
+
+        for s in config['sources']:
+            if s[-1]=='/':
+                print "Removing trailing / from source path."
+                s = s[:-1]
+            print "Backing up {} to {}.".format(s,target)
+
+            rsync_call = ['rsync']+rsync_options+[s,target]
+            print "rsync call is:\n"+' '.join(rsync_call)
+
+            rsync_process = sp.Popen(rsync_call)
             rsync_process.wait()
