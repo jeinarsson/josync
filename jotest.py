@@ -12,7 +12,8 @@ def main():
 
     # parse job file
     sj = SyncJob('syncjob-example.josync-job')
-    print sj.source_drives
+    print sj.sources
+    sj.run()
 
 
     # TODO execute job

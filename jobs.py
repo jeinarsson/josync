@@ -25,11 +25,22 @@ class Job(object):
         if not os.path.isdir(self.target):
             raise IOError("Target directory does not exist.")
 
+        # Group sources in a dict of drives
+        self.sources = {}        
+        for source in self.win_sources:
+            drive, path = os.path.splitdrive(source)
+            if not os.path.ismount(drive+'/'):
+                raise IOError("Unable to identify drive {}.".format(drive))
+            if drive in self.sources:
+                self.sources[drive].append(path)
+            else:
+                self.sources[drive] = [path]
 
-        self.source_drives = set([drive for drive,path in [os.path.splitdrive(source) for source in self.win_sources]])
+
 
     def run(self):
         raise NotImplementedError("Run method of job was not implemented.")
+
 
 class SyncJob(Job):
     """Simple backup syncing dir to dir."""
@@ -37,20 +48,25 @@ class SyncJob(Job):
         super(SyncJob, self).__init__(job_file)
 
     def run(self):
-        target = self.params['target']
+        target = self.target
         rsync_options = ['-avzh','--chmod=ug=rwx,o=rx','--delete','--verbose']
 
-        for s in config['sources']:
-            if s[-1]=='/':
-                print "Removing trailing / from source path."
-                s = s[:-1]
-            print "Backing up {} to {}.".format(s,target)
+        for drive,paths in self.sources:
+            print "Backup sources on {}.".format(drive)
+            with utils.volume_shadow(drive) as drive_root:
+                for source_path in paths:
+                    print "Run rsync for source {}.".format(source_path)
+                    # if s[-1]=='/':
+                    #     print "Removing trailing / from source path."
+                    #     s = s[:-1]
+                    # print "Backing up {} to {}.".format(s,target)
 
-            rsync_call = ['rsync']+rsync_options+[s,target]
-            print "rsync call is:\n"+' '.join(rsync_call)
+                    # rsync_call = ['rsync']+rsync_options+[s,target]
+                    # print "rsync call is:\n"+' '.join(rsync_call)
 
-            rsync_process = sp.Popen(rsync_call)
-            rsync_process.wait()
+                    # rsync_process = sp.Popen(rsync_call)
+                    # rsync_process.wait()
+
 
 class TimelineJob(Job):
     """Backups to a timeline of snapshots."""
