@@ -51,11 +51,11 @@ class SyncJob(Job):
         target = self.target
         rsync_options = ['-avzh','--chmod=ug=rwx,o=rx','--delete','--verbose']
 
-        for drive,paths in self.sources:
+        for drive,paths in self.sources.items():
             print "Backup sources on {}.".format(drive)
             with utils.volume_shadow(drive) as drive_root:
                 for source_path in paths:
-                    print "Run rsync for source {}.".format(source_path)
+                    # TODO run rsync for source_path
                     # if s[-1]=='/':
                     #     print "Removing trailing / from source path."
                     #     s = s[:-1]

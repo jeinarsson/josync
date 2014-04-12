@@ -4,3 +4,4 @@ user.josync-config
 *.josync-job
 !*example.josync-job
 *test.py
+*.exe
