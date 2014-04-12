@@ -1,3 +1,4 @@
 {
-    "cygwin_bin_path": "C:/cygwin/bin"
+    "cygwin_bin_path": "C:/cygwin/bin",
+    "vshadow_bin": "vshadow.exe"
 }

@@ -11,11 +11,8 @@ def main():
     utils.read_config(default_cfg='default.josync-config',user_cfg='user.josync-config')
 
     # parse job file
-    sj = SyncJob('syncjob-example.josync-job')
 
-
-    # TODO execute job
-
+    # execute job
 
     print "good bye"
 
