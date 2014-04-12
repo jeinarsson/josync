@@ -2,6 +2,8 @@ import os
 import json
 import subprocess as sp
 from contextlib import contextmanager
+import re
+import tempfile
 
 config = {}
 
@@ -18,6 +20,8 @@ def read_config(default_cfg,user_cfg):
         raise
     if not os.path.isfile(config['cygpath_bin']):
         raise IOError("cygpath.exe could not be found at {}.".format(config['cygpath_bin']))
+    if not os.path.isfile(config['vshadow_bin']):
+        raise IOError("vshadow.exe could not be found at {}.".format(config['vshadow_bin']))
 
 
 def update_config(config_file):
@@ -39,28 +43,40 @@ def get_cygwin_path(path):
         return cygwin_path
 
 def shell_execute(command):
+    '''Run command with Popen
+    Returns: 2-tuple with return code and stdout
+    '''
     process = sp.Popen(command, stdout=sp.PIPE)
-    return process.communicate()[0].strip()
+
+    stdout = process.communicate()[0].strip()
+    return (process.returncode, stdout)
 
 
 @contextmanager
 def volume_shadow(drive):
 
-    # create and mount volume shadow
+    # create shadow copy
     vshadow = config['vshadow_bin']
-    vshadow_output = shell_execute([vshadow, '-p', '-nw', drive])
-    # TODO parse guid
-    shadow_guid = ""
-    # TODO invent clever temp path
-    shadow_path = ""
-    vshadow_output = shell_execute([vshadow, '-el={},{}'.format(shadow_guid, shadow_path)])
+    vshadow_returncode, vshadow_output = shell_execute([vshadow, '-p', '-nw', drive])
+    guidmatch = re.search(r"\* SNAPSHOT ID = (\{[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}\})", vshadow_output)
+    if not guidmatch or not vshadow_returncode == 0:
+        raise OSError("vhadow did not produce a GUID. Return code: {}".format(vshadow_returncode))
+    shadow_guid = guidmatch.group(1)
 
     try:
+        # mount shadow copy in a temp dir
+        shadow_path = tempfile.mkdtemp()
+        vshadow_returncode, vshadow_output = shell_execute([vshadow, '-el={},{}'.format(shadow_guid, shadow_path)])
+        if not vshadow_returncode == 0:
+            raise OSError("vshadow could not mount shadow copy: {}".format(shadow_guid))
+
         yield shadow_path
+
     finally:
         # dismount and delete volume shadow
-        vshadow_output = shell_execute([vshadow, '-ds={}'.format(shadow_guid)])
-        #TODO parse output for success
+        vshadow_returncode, vshadow_output = shell_execute([vshadow, '-ds={}'.format(shadow_guid)])
+        if not vshadow_returncode == 0:
+            raise OSError("vshadow could not delete shadow copy: {}".format(shadow_guid))
+        os.rmdir(shadow_path)
 
-# with volume_shadow("c:") as shadow_path:
-#     print shadow_path
+
