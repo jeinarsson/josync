@@ -25,6 +25,9 @@ class Job(object):
         if not os.path.isdir(self.target):
             raise IOError("Target directory does not exist.")
 
+
+        self.source_drives = set([drive for drive,path in [os.path.splitdrive(source) for source in self.win_sources]])
+
     def run(self):
         raise NotImplementedError("Run method of job was not implemented.")
 
