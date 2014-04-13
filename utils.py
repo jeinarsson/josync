@@ -4,8 +4,10 @@ import subprocess as sp
 from contextlib import contextmanager
 import re
 import tempfile
+import logging
 
 config = {}
+logger = logging.getLogger(__name__)
 
 def read_config(default_cfg,user_cfg):
     """Read config file and check values"""
@@ -79,4 +81,23 @@ def volume_shadow(drive):
             raise OSError("vshadow could not delete shadow copy: {}".format(shadow_guid))
         os.rmdir(shadow_path)
 
+def init_logger(l,logfile_level=logging.INFO,stderr_level=logging.INFO):
+    """Initialize a logger with appropriate output handlers."""
+    l.setLevel(min((logfile_level,stderr_level)))
 
+    # Console handler
+    ch = logging.StreamHandler()
+    ch.setLevel(stderr_level)
+    formatter = logging.Formatter('%(name)s - %(levelname)s - %(message)s')
+    ch.setFormatter(formatter)
+    l.addHandler(ch)
+
+    # Logfile handler
+    fh = logging.FileHandler(config['logfile'],mode='a')
+    fh.setLevel(logfile_level)
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    fh.setFormatter(formatter)
+    l.addHandler(fh)    
+
+def clear_logfile():
+    open(config['logfile'],'w').close()

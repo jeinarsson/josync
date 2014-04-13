@@ -5,3 +5,4 @@ user.josync-config
 !*example.josync-job
 *test.py
 *.exe
+*.log

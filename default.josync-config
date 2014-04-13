@@ -1,4 +1,5 @@
 {
     "cygwin_bin_path": "C:/cygwin/bin",
-    "vshadow_bin": "vshadow.exe"
+    "vshadow_bin": "vshadow.exe",
+    "logfile": "josync.log"
 }

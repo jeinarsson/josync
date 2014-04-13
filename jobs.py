@@ -1,6 +1,10 @@
 import utils
 import json
 import os
+import logging
+
+logger = logging.getLogger(__name__)
+
 
 class Job(object):
     """Parent class for backup jobs."""
@@ -46,16 +50,18 @@ class SyncJob(Job):
     """Simple backup syncing dir to dir."""
     def __init__(self,job_file):
         super(SyncJob, self).__init__(job_file)
+        logger.info("Initializing SyncJob from {}.".format(job_file))
 
     def run(self):
         target = self.target
         rsync_options = ['-avzh','--chmod=ug=rwx,o=rx','--delete','--verbose']
 
         for drive,paths in self.sources.items():
-            print "Backup sources on {}.".format(drive)
+            logger.info("Backup sources on {}.".format(drive))
             with utils.volume_shadow(drive) as drive_root:
                 for source_path in paths:
                     # TODO run rsync for source_path
+                    pass
                     # if s[-1]=='/':
                     #     print "Removing trailing / from source path."
                     #     s = s[:-1]
@@ -81,12 +87,12 @@ class TimelineJob(Job):
 
         for s in config['sources']:
             if s[-1]=='/':
-                print "Removing trailing / from source path."
+                logger.debug("Removing trailing / from source path. {}".format(s))
                 s = s[:-1]
-            print "Backing up {} to {}.".format(s,target)
+            logger.info("Backing up {} to {}.".format(s,target))
 
             rsync_call = ['rsync']+rsync_options+[s,target]
-            print "rsync call is:\n"+' '.join(rsync_call)
+            logger.debug("rsync call is:\n"+' '.join(rsync_call))
 
             rsync_process = sp.Popen(rsync_call)
             rsync_process.wait()

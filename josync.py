@@ -1,20 +1,28 @@
 import utils
 import jobs
+import logging
+
+logger = logging.getLogger(__name__)
 
 def main():
 
-    print "Helo. This is josync v. 42."
+    # parse global settings file
+    utils.read_config(default_cfg='default.josync-config',user_cfg='user.josync-config')
+    utils.clear_logfile()
+    utils.init_logger(utils.logger)
+    utils.init_logger(jobs.logger)
+    utils.init_logger(logger)
+
+    logger.info("Helo. This is josync v. 42.")
 
     # TODO parse command line args
 
-    # parse global settings file
-    utils.read_config(default_cfg='default.josync-config',user_cfg='user.josync-config')
 
     # parse job file
 
     # execute job
 
-    print "good bye"
+    logger.info("good bye")
 
 
 
