@@ -1,8 +1,10 @@
-import utils
-import jobs
-import json
 import logging
 import logging.config
+import json
+
+import jobs
+import utils
+
 
 logger = logging.getLogger(__name__)
 
@@ -10,6 +12,9 @@ def main():
     # TODO parse command line args
 
     logger.info("Session started. Josync version {}.".format(42))
+
+    # enumerate net drives
+    utils.enumerate_net_drives()
 
     # parse global settings file
     utils.read_config(default_cfg='default.josync-config',user_cfg='user.josync-config')
