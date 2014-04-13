@@ -20,7 +20,7 @@ def main():
         job = jobs.SyncJob("syncjob-example.josync-job")
         job.run()
     except Exception as e:
-        utils.log_exception(e)
+        logger.exception(e)
 
 
     logger.info("Session ended.")

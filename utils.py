@@ -5,7 +5,7 @@ from contextlib import contextmanager
 import re
 import tempfile
 import logging
-import traceback
+
 
 config = {}
 logger = logging.getLogger(__name__)
@@ -91,6 +91,3 @@ def volume_shadow(drive):
         os.rmdir(shadow_path)
         logger.info("Shadow copy {} of {} at {} successfully deleted".format(shadow_guid, drive, shadow_path))
 
-
-def log_exception(e):
-    logger.error("Exception:\n{}".format(traceback.format_exc(e)))
