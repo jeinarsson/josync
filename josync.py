@@ -22,8 +22,9 @@ def main():
 
     # parse and execute job file
     try:
-        job = jobs.SyncJob("syncjob-example.josync-job")
+        job = jobs.create_job_from_file('syncjob-example.josync-job')
         job.run()
+        
     except Exception as e:
         logger.exception(e)
 
