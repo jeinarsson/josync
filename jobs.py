@@ -10,6 +10,8 @@ class Job(object):
     """Parent class for backup jobs."""
     def __init__(self,job_file):
         super(Job, self).__init__()
+
+        logger.info("Initializing Job from {}.".format(job_file))
         with open(job_file) as f:
             self.params = json.loads(f.read())
 
@@ -18,16 +20,19 @@ class Job(object):
             self.params['name'] =filename
 
         # Check config parameters
-        try:
-            self.target = self.params['target']
-            self.win_sources = self.params['sources']
-        except KeyError as e:
-            print "One of the necessary job parameters were not found."
-            raise
-        if not all([os.path.isdir(s) for s in self.win_sources]):
-            raise IOError("One or more source directories does not exist.")
+        self.target = self.params['target']
+        
+        raw_win_sources = self.params['sources']
+        self.win_sources = []
+        for s in raw_win_sources:
+            if not os.path.isdir(s):
+                logger.warning("The source directory {} does not exist (ignoring).".format(s))
+            else:
+                self.win_sources.append(s)
+        self.params['sources'] = self.win_sources
+
         if not os.path.isdir(self.target):
-            raise IOError("Target directory does not exist.")
+            raise IOError("Target directory {} does not exist.".format(self.target))
 
         # Group sources in a dict of drives
         self.sources = {}        
@@ -57,42 +62,8 @@ class SyncJob(Job):
         rsync_options = ['-avzh','--chmod=ug=rwx,o=rx','--delete','--verbose']
 
         for drive,paths in self.sources.items():
-            logger.info("Backup sources on {}.".format(drive))
+            logger.info("Backing up sources on {}".format(drive))
             with utils.volume_shadow(drive) as drive_root:
                 for source_path in paths:
+                    logger.info("Backing up {}".format(source_path))
                     # TODO run rsync for source_path
-                    pass
-                    # if s[-1]=='/':
-                    #     print "Removing trailing / from source path."
-                    #     s = s[:-1]
-                    # print "Backing up {} to {}.".format(s,target)
-
-                    # rsync_call = ['rsync']+rsync_options+[s,target]
-                    # print "rsync call is:\n"+' '.join(rsync_call)
-
-                    # rsync_process = sp.Popen(rsync_call)
-                    # rsync_process.wait()
-
-
-class TimelineJob(Job):
-    """Backups to a timeline of snapshots."""
-    def __init__(self, job_file):
-        super(TimelineJob, self).__init__(job_file)
-        if 'datetime_format' not in self.params:
-            self.params['datetime_format'] = '%Y-%m-%d-%H%M%S'
-
-    def run(self):
-        target = '{}/{}-{}'.format(self.params['target'],self.params['name'],self.params['datetime_format'])
-        rsync_options = ['-avzh','--chmod=ug=rwx,o=rx','--delete','--verbose']
-
-        for s in config['sources']:
-            if s[-1]=='/':
-                logger.debug("Removing trailing / from source path. {}".format(s))
-                s = s[:-1]
-            logger.info("Backing up {} to {}.".format(s,target))
-
-            rsync_call = ['rsync']+rsync_options+[s,target]
-            logger.debug("rsync call is:\n"+' '.join(rsync_call))
-
-            rsync_process = sp.Popen(rsync_call)
-            rsync_process.wait()

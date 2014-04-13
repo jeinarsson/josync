@@ -1,5 +1,5 @@
 {
-    "sources": ["D:/git"],
-    "excludes": ["epod/"],
-    "target": "D:/temp/backup"
+    "sources": ["c:/"],
+    "excludes": ["c:/windows"],
+    "target": "c:/backup"
 }
