@@ -6,3 +6,4 @@ user.josync-config
 *test.py
 *.exe
 *.log
+SETVAR.cmd

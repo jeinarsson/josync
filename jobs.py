@@ -2,6 +2,7 @@ import utils
 import json
 import os
 import logging
+import subprocess as sp
 
 logger = logging.getLogger(__name__)
 
@@ -60,14 +61,31 @@ class SyncJob(Job):
     def run(self):
         """Run rsync to sync one or more sources with one target directory."""
         target = self.target
-        rsync_options = ['-avzh','--chmod=ug=rwx,o=rx','--delete','--verbose']
+        rsync_options = ['-avzh','--delete','--verbose']
 
         for drive,paths in self.sources.items():
             logger.info("Backing up sources on {}".format(drive))
             with utils.volume_shadow(drive) as drive_root:
                 for source_path in paths:
-                    logger.info("Backing up {}".format(source_path))
-                    # TODO run rsync for source_path
+                    logger.info("Backing up {}{} to {}".format(drive,source_path,target))
+                    logger.debug("Drive root is found at {} and source path is {}.".format(drive_root,source_path))
+
+                    source_returncode,cygsource = utils.get_cygwin_path("{}{}".format(drive_root,source_path))
+                    target_returncode,cygtarget = utils.get_cygwin_path(target)
+                    if source_returncode != 0:
+                        raise IOError("Cygwin path could not be retrieved for source {}{}.".format(drive,source_path))
+                    if target_returncode != 0:
+                        raise IOError("Cygwin path could not be retrieved for target {}.".format(target))
+
+                    rsync_call = [utils.config['rsync_bin']]+rsync_options+[cygsource,cygtarget]
+                    logger.debug("rsync call is {}".format(' '.join(rsync_call)))
+                    # Run rsync
+                    # TODO capture and maybe parse output
+                    rsync_process = sp.Popen(rsync_call)
+                    rsync_process.wait()
+                    if rsync_process.returncode != 0:
+                        # Appropriate exception type?
+                        raise IOError("rsync returned with exit code {}.".format(rsync_process.returncode))
 
 # enumerate all possible job types and their constructors
 job_types = {

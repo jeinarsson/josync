@@ -20,6 +20,7 @@ def read_config(default_cfg,user_cfg):
     # Check config parameters
     try:
         config['cygpath_bin'] = '{}/cygpath.exe'.format(config['cygwin_bin_path'])
+        config['rsync_bin'] = '{}/rsync.exe'.format(config['cygwin_bin_path'])
     except KeyError as e:
         print "One of the necessary configuration parameters were not found."
         raise
@@ -27,6 +28,8 @@ def read_config(default_cfg,user_cfg):
         raise IOError("cygpath.exe could not be found at {}.".format(config['cygpath_bin']))
     if not os.path.isfile(config['vshadow_bin']):
         raise IOError("vshadow.exe could not be found at {}.".format(config['vshadow_bin']))
+    if not os.path.isfile(config['rsync_bin']):
+        raise IOError("rsync.exe could not be found at {}.".format(config['rsync_bin']))
 
 
 def update_config(config_file):
