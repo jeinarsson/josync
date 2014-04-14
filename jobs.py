@@ -21,7 +21,7 @@ class Job(object):
 
         # Check config parameters
         self.target = self.params['target']
-        
+
         raw_win_sources = self.params['sources']
         self.win_sources = []
         for s in raw_win_sources:
@@ -35,7 +35,7 @@ class Job(object):
             raise IOError("Target directory {} does not exist.".format(self.target))
 
         # Group sources in a dict of drives
-        self.sources = {}        
+        self.sources = {}
         for source in self.win_sources:
             drive, path = os.path.splitdrive(source)
             if not os.path.ismount(drive+'/'):
@@ -58,6 +58,7 @@ class SyncJob(Job):
         logger.info("Initializing SyncJob from {}.".format(job_file))
 
     def run(self):
+        """Run rsync to sync one or more sources with one target directory."""
         target = self.target
         rsync_options = ['-avzh','--chmod=ug=rwx,o=rx','--delete','--verbose']
 

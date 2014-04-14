@@ -49,6 +49,7 @@ def get_cygwin_path(path):
 
 def shell_execute(command):
     '''Run command with Popen
+
     Returns: 2-tuple with return code and stdout
     '''
     process = sp.Popen(command, stdout=sp.PIPE)
@@ -61,7 +62,7 @@ def shell_execute(command):
 def volume_shadow(drive):
 
     logger.info("Attempting to create shadow copy of volume {}".format(drive))
-    
+
     vshadow = config['vshadow_bin']
     vshadow_returncode, vshadow_output = shell_execute([vshadow, '-p', '-nw', drive])
     guidmatch = re.search(r"\* SNAPSHOT ID = (\{[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}\})", vshadow_output)
@@ -82,7 +83,7 @@ def volume_shadow(drive):
         yield shadow_path
 
     finally:
-        
+
         logger.info("Deleting shadow copy {} of volume {}".format(shadow_guid, drive))
         vshadow_returncode, vshadow_output = shell_execute([vshadow, '-ds={}'.format(shadow_guid)])
         if not vshadow_returncode == 0:
