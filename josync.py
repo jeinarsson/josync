@@ -1,8 +1,10 @@
-import utils
-import jobs
-import json
 import logging
 import logging.config
+import json
+
+import jobs
+import utils
+
 
 logger = logging.getLogger(__name__)
 
@@ -11,14 +13,18 @@ def main():
 
     logger.info("Session started. Josync version {}.".format(42))
 
+    # enumerate net drives
+    utils.enumerate_net_drives()
+
     # parse global settings file
     utils.read_config(default_cfg='default.josync-config',user_cfg='user.josync-config')
 
 
     # parse and execute job file
     try:
-        job = jobs.SyncJob("syncjob-example.josync-job")
+        job = jobs.create_job_from_file('syncjob-example.josync-job')
         job.run()
+        
     except Exception as e:
         logger.exception(e)
 
