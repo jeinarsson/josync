@@ -50,6 +50,7 @@ def get_cygwin_path(path):
 
 def shell_execute(command):
     '''Run command with Popen
+
     Returns: 2-tuple with return code and stdout
     '''
     process = sp.Popen(command, stdout=sp.PIPE)
@@ -62,7 +63,7 @@ def shell_execute(command):
 def volume_shadow(drive):
 
     logger.info("Attempting to create shadow copy of volume {}".format(drive))
-    
+
     vshadow = config['vshadow_bin']
     vshadow_returncode, vshadow_output = shell_execute([vshadow, '-p', '-nw', drive])
     guidmatch = re.search(r"\* SNAPSHOT ID = (\{[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}\})", vshadow_output)
@@ -83,7 +84,7 @@ def volume_shadow(drive):
         yield shadow_path
 
     finally:
-        
+
         logger.info("Deleting shadow copy {} of volume {}".format(shadow_guid, drive))
         vshadow_returncode, vshadow_output = shell_execute([vshadow, '-ds={}'.format(shadow_guid)])
         if not vshadow_returncode == 0:
@@ -95,6 +96,7 @@ def volume_shadow(drive):
 
 def enumerate_net_drives():
     '''Runs NET USE and parses output
+    
     Returns list of drive letters and corresponding UNC paths cygwin-ified (forward slashes, escaped spaces)
     '''
     returncode, output = shell_execute(["net","use"])
@@ -102,11 +104,12 @@ def enumerate_net_drives():
     # typical row to match:
     # OK           B:        \\Hawkins\Jonas Backup    Microsoft Windows Network
     #regex matches only drives with assigned letter, and only "Microsoft Windows Network" shares.
-    matches=re.finditer(r"(\w+)\s*([A-Z]:)\s*([\w\s\\]+\w)\s+Microsoft Windows Network", output)
+    matches=re.finditer(r"(\w+)\s*([A-Z]:)\s*([\w\s\\\.]+\w)\s+Microsoft Windows Network", output)
     net_drives=[]
     for match in matches:
         drive = match.group(2)
         unc = match.group(3).replace('\\','/').replace(' ', '\\ ')
+        logger.debug("enumerate network drives matched: 1: \"{}\", 2: \"{}\", 3: \"{}\"".format(match.group(1),match.group(2),match.group(3)))
         net_drives.append((drive,unc))
         
     logger.info("net use reported {} mapped drives".format(len(net_drives)))
