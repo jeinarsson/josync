@@ -61,7 +61,7 @@ class SyncJob(Job):
     def run(self):
         """Run rsync to sync one or more sources with one target directory."""
         target = self.target
-        rsync_options = ['-avzh','--chmod=ugo=rwX','--delete','--verbose']
+        rsync_options = ['-avzh','--chmod=ugo=rwX','--delete']
 
         for drive,paths in self.sources.items():
             logger.info("Backing up sources on {}".format(drive))
@@ -81,11 +81,14 @@ class SyncJob(Job):
                     logger.debug("rsync call is {}".format(' '.join(rsync_call)))
                     # Run rsync
                     # TODO capture and maybe parse output
+                    logger.info("Running rsync.")
                     rsync_process = sp.Popen(rsync_call)
                     rsync_process.wait()
                     if rsync_process.returncode != 0:
                         # Appropriate exception type?
                         raise IOError("rsync returned with exit code {}.".format(rsync_process.returncode))
+                    else:
+                        logger.info("rsync finished successfully.")
 
 # enumerate all possible job types and their constructors
 job_types = {
