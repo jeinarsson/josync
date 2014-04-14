@@ -109,7 +109,7 @@ def enumerate_net_drives():
     for match in matches:
         drive = match.group(2)
         unc = match.group(3).replace('\\','/').replace(' ', '\\ ')
-        logger.debug("Matched: \n1: {}\n2: {}\n3: {}".format(match.group(1),match.group(2),match.group(3)))
+        logger.debug("enumerate network drives matched: 1: \"{}\", 2: \"{}\", 3: \"{}\"".format(match.group(1),match.group(2),match.group(3)))
         net_drives.append((drive,unc))
         
     logger.info("net use reported {} mapped drives".format(len(net_drives)))
