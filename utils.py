@@ -12,7 +12,14 @@ logger = logging.getLogger(__name__)
 
 
 def read_config(default_cfg,user_cfg):
-    """Read config file and check values"""
+    """Reads config file and checks values.
+
+    :param default_cfg: Path to default config file.
+    :type default_cfg: str
+    :param user_cfg: Path to user config file.
+    :type user_cfg: str
+    :raises: KeyError, IOError
+    """
     logger.debug("Updating config dictionaries from default file \"{}\" and user file \"{}\".".format(default_cfg,user_cfg))
     update_config(default_cfg)
     update_config(user_cfg)
@@ -33,7 +40,11 @@ def read_config(default_cfg,user_cfg):
 
 
 def update_config(config_file):
-    """Update the module config dict from a config file."""
+    """Update the module config dict from a config file.
+
+    :param config_file: Path to JSON config file.
+    :type config_file: str
+    """
     logger.debug("Reading from json config {}.".format(config_file))
     with open(config_file) as f:
         config_in = json.loads(f.read())
@@ -41,21 +52,31 @@ def update_config(config_file):
 
 
 def get_cygwin_path(path):
-    """Return cygwin path for a given windows path"""
+    """Return cygwin path for a given windows path.
+
+    :param path: The windows path to convert.
+    :type path: str
+    :returns: str -- The cygwin path to ``path``.
+    :raises: ValueError, IOError
+    """
     if not os.path.exists(path):
         raise ValueError("The given path does not exist. Path given: {}.".format(path))
     cygpath = config['cygpath_bin']
-    cygwin_path = shell_execute([cygpath,path])
+    returncode,cygwin_path = shell_execute([cygpath,path])
+    if returncode != 0:
+        raise IOError("cygpath returned with exit code {}".format(returncode))
     if not len(cygwin_path) > 0:
         raise IOError("No cygwin path was found for {}.".format(path))
-    else:
-        return cygwin_path
+    return cygwin_path
+
 
 def shell_execute(command):
-    '''Run command with Popen
+    """Run command with ``subprocess.Popen``
 
-    Returns: 2-tuple with return code and stdout
-    '''
+    :param command: Command to run.
+    :type command: str
+    :returns: 2-tuple with return code and stdout.
+    """
     process = sp.Popen(command, stdout=sp.PIPE)
 
     stdout = process.communicate()[0].strip()
@@ -64,7 +85,16 @@ def shell_execute(command):
 
 @contextmanager
 def volume_shadow(drive):
+    """volume_shadow(drive)
+    Creates a shadow copy of a drive and mounts it at a temporary directory.
 
+    Implemented with ``contextmanager`` to be used through the python :keyword:`with` statement.
+
+    :param drive: Drive to shadow copy.
+    :type drive: str
+    :yields: str -- Path to temp folder where shadow copy is mounted.
+    :raises: OSError
+    """
     logger.info("Attempting to create shadow copy of volume {}".format(drive))
 
     vshadow = config['vshadow_bin']
@@ -98,9 +128,9 @@ def volume_shadow(drive):
 
 
 def enumerate_net_drives():
-    '''Runs NET USE and parses output
+    '''Runs NET USE and parses output.
     
-    Returns list of drive letters and corresponding UNC paths cygwin-ified (forward slashes, escaped spaces)
+    :returns: List of drive letters and corresponding UNC paths cygwin-ified (forward slashes, escaped spaces) as 2-tuple.
     '''
     returncode, output = shell_execute(["net","use"])
 

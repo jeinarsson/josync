@@ -47,13 +47,12 @@ class Job(object):
                 self.sources[drive] = [path]
 
 
-
     def run(self):
         raise NotImplementedError("Run method of job was not implemented.")
 
 
 class SyncJob(Job):
-    """Simple backup syncing dir to dir."""
+    """Simple backup syncing multiple sources to a target directory."""
     def __init__(self,params):
         super(SyncJob, self).__init__(params)
         logger.info("Initializing SyncJob.")
@@ -72,12 +71,8 @@ class SyncJob(Job):
                     logger.info("Backing up {}{} to {}".format(drive,source_path,target))
                     logger.debug("Drive root is found at {} and source path is {}.".format(drive_root,source_path))
 
-                    source_returncode,cygsource = utils.get_cygwin_path("{}{}".format(drive_root,source_path))
-                    target_returncode,cygtarget = utils.get_cygwin_path(target)
-                    if source_returncode != 0:
-                        raise IOError("Cygwin path could not be retrieved for source {}{}.".format(drive,source_path))
-                    if target_returncode != 0:
-                        raise IOError("Cygwin path could not be retrieved for target {}.".format(target))
+                    cygsource = utils.get_cygwin_path("{}{}".format(drive_root,source_path))
+                    cygtarget = utils.get_cygwin_path(target)
 
                     rsync_call = [utils.config['rsync_bin']]+rsync_options+[cygsource,cygtarget]
                     logger.debug("rsync call is {}".format(' '.join(rsync_call)))
@@ -99,15 +94,21 @@ job_types = {
 
 
 def create_job_from_file(job_file):
-        logger.info("Creating Job from {}.".format(job_file))
-        with open(job_file) as f:
-            params = json.loads(f.read())
-        if not 'type' in params:
-            raise IOError('Job file does not specify a job type.')    
-    
-        if not params['type'] in job_types:
-            raise IOError('Job type {} is not valid.'.format(params['type']))
+    """Creates a job from a JSON job specification.
 
-        params['job_file'] = job_file
+    :param job_file: Path to job file.
+    :type job_file: str
+    :returns: Job object of specified type.
+    """
+    logger.info("Creating Job from {}.".format(job_file))
+    with open(job_file) as f:
+        params = json.loads(f.read())
+    if not 'type' in params:
+        raise IOError('Job file does not specify a job type.')    
 
-        return job_types[params['type']](params)
+    if not params['type'] in job_types:
+        raise IOError('Job type {} is not valid.'.format(params['type']))
+
+    params['job_file'] = job_file
+
+    return job_types[params['type']](params)
