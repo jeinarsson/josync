@@ -62,6 +62,8 @@ class SyncJob(Job):
         """Run rsync to sync one or more sources with one target directory."""
         target = self.target
         rsync_options = ['-avzh','--chmod=ugo=rwX','--delete']
+        for excl in self.params['excludes']:
+            rsync_options += ["--exclude",excl]
 
         for drive,paths in self.sources.items():
             logger.info("Backing up sources on {}".format(drive))

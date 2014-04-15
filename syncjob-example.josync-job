@@ -1,6 +1,6 @@
 {
     "type": "sync",
     "sources": ["c:/"],
-    "excludes": ["c:/windows"],
+    "excludes": ["windows"],
     "target": "c:/backup"
 }
