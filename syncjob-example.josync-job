@@ -1,6 +1,8 @@
 {
     "type": "sync",
-    "sources": ["c:/"],
-    "excludes": ["windows"],
+    "sources": [
+    		{"path": "c:/", "excludes": ["windows"]}
+    	],
+    "global_excludes": ["*.sys"],
     "target": "c:/backup"
 }
