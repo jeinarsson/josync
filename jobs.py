@@ -96,7 +96,7 @@ class BaseSyncJob(Job):
     """Base class for sync-type jobs."""
     def __init__(self,params):
         super(BaseSyncJob, self).__init__(params)
-        self.rsync_options += ['-vzh','--chmod=ugo=rwX']
+        self.rsync_options += ['-avzP','--chmod=ugo=rwX']
 
     def run(self):
         """Run rsync to sync one or more sources with one target directory."""
@@ -135,7 +135,7 @@ class SyncJob(BaseSyncJob):
 
         # Delete option to keep up-to-date with sources
         # Relative option to create directory tree at target
-        self.rsync_options += ['--archive','--delete','--relative']
+        self.rsync_options += ['--delete','--relative']
 
     def prepare_source(self,source_drive,mount_root,source_path):
         # Insert /./ in source path to create tree at target relative to after /cygdrive/
@@ -154,8 +154,6 @@ class AdditiveJob(BaseSyncJob):
     def __init__(self,params):
         super(AdditiveJob, self).__init__(params)
         logger.info("Initializing AdditiveJob.")
-
-        self.rsync_options += ['--recursive','--perms']
 
     def prepare_source(self,source_drive,mount_root,source_path):
         # Add / at the end to start in folder
