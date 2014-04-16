@@ -58,24 +58,30 @@ class Job(object):
     def run(self):
         raise NotImplementedError("Run method of job was not implemented.")
 
-    def prepare_source(self,drive_root,source_path):
+    def prepare_source(self,source_drive,mount_root,source_path):
         """Prepare source for rsync call.
 
-        :param drive_root: Temp dir for source drive shadow copy.
-        :type drive_root: str
-        :param source_path: Path relative to drive base.
+        :param source_drive: Drive letter for source drive.
+        :type source_drive: str
+        :param mount_root: Temp dir for source drive shadow copy.
+        :type mount_root: str
+        :param source_path: Relative path to source from drive root.
         :type source_path: str
         :returns: str -- Source path ready for rsync.
         """
-        return utils.get_cygwin_path("{}{}".format(drive_root,source_path))
+        return utils.get_cygwin_path("{}{}".format(mount_root,source_path))
 
-    def prepare_target(self,target):
+    def prepare_target(self,source_drive,source_path,target_path):
         """Prepare target for rsync call.
 
-        :param target: Target path.
-        :type target: str
+        :param source_drive: Drive letter for source drive.
+        :type source_drive: str
+        :param source_path: Relative path to source from drive root.
+        :type source_path: str
+        :param target_path: Path to target.
+        :type target_path: str
         :returns: str -- Target path ready for rsync."""
-        return utils.get_cygwin_path(target)
+        return utils.get_cygwin_path(target_path)
 
     def add_excludes(self,excludes):
         """Add a list of strings to rsync_options as excludes.
@@ -103,8 +109,8 @@ class BaseSyncJob(Job):
                     logger.info("Backing up {}{} to {}".format(drive,s['path'],self.target))
                     logger.debug("Drive root is found at {} and source path is {}.".format(shadow_root,s['path']))
 
-                    cygsource = self.prepare_source(shadow_root,s['path'])
-                    cygtarget = self.prepare_target(self.target)
+                    cygsource = self.prepare_source(drive,shadow_root,s['path'])
+                    cygtarget = self.prepare_target(drive,s['path'],self.target)
                     self.add_excludes(s['excludes'])
 
                     rsync_call = [utils.config['rsync_bin']]+self.rsync_options+[cygsource,cygtarget]
@@ -131,9 +137,16 @@ class SyncJob(BaseSyncJob):
         # Relative option to create directory tree at target
         self.rsync_options += ['--archive','--delete','--relative']
 
-    def prepare_source(self,drive,source_path):
+    def prepare_source(self,source_drive,mount_root,source_path):
         # Insert /./ in source path to create tree at target relative to after /cygdrive/
-        return super(SyncJob, self).prepare_source(drive,source_path).replace('/cygdrive/','/cygdrive/./')
+        cyg_root = utils.get_cygwin_path(mount_root)
+        cyg_source_path = utils.get_cygwin_path(source_path)
+        full_source_path = '{}/.{}'.format(cyg_root,cyg_source_path)
+        return full_source_path
+
+    def prepare_target(self,source_drive,source_path,target_path):
+        drive = source_drive.replace(":","")
+        return super(SyncJob,self).prepare_target(source_drive,source_path,target_path)+'/{}'.format(drive)
 
 
 class AdditiveJob(BaseSyncJob):
@@ -144,9 +157,9 @@ class AdditiveJob(BaseSyncJob):
 
         self.rsync_options += ['--recursive','--perms']
 
-    def prepare_source(self,drive,source_path):
+    def prepare_source(self,source_drive,mount_root,source_path):
         # Add / at the end to start in folder
-        return super(AdditiveJob, self).prepare_source(drive,source_path)+'/'
+        return super(AdditiveJob, self).prepare_source(mount_root,source_path)+'/'
 
 
 # enumerate all possible job types and their constructors
