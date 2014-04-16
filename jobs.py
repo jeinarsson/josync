@@ -98,12 +98,12 @@ class BaseSyncJob(Job):
 
         for drive,sources in self.sources.items():
             logger.info("Backing up sources on {}".format(drive))
-            with utils.volume_shadow(drive) as drive_root:
+            with utils.volume_shadow(drive) as shadow_root:
                 for s in sources:
                     logger.info("Backing up {}{} to {}".format(drive,s['path'],self.target))
-                    logger.debug("Drive root is found at {} and source path is {}.".format(drive_root,s['path']))
+                    logger.debug("Drive root is found at {} and source path is {}.".format(shadow_root,s['path']))
 
-                    cygsource = self.prepare_source(drive,s['path'])
+                    cygsource = self.prepare_source(shadow_root,s['path'])
                     cygtarget = self.prepare_target(self.target)
                     self.add_excludes(s['excludes'])
 
