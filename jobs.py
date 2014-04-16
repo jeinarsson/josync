@@ -157,7 +157,7 @@ class AdditiveJob(BaseSyncJob):
 
     def prepare_source(self,source_drive,mount_root,source_path):
         # Add / at the end to start in folder
-        return super(AdditiveJob, self).prepare_source(mount_root,source_path)+'/'
+        return super(AdditiveJob, self).prepare_source(source_drive,mount_root,source_path)+'/'
 
 
 # enumerate all possible job types and their constructors
