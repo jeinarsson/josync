@@ -27,8 +27,8 @@ class Job(object):
         raw_win_sources = self.params['sources']
         self.win_sources = []
         for s in raw_win_sources:
-            if not os.path.isdir(s):
-                logger.warning("The source directory {} does not exist (ignoring).".format(s))
+            if not os.path.isdir(s['path']):
+                logger.warning("The source directory {} does not exist (ignoring).".format(s['path']))
             else:
                 self.win_sources.append(s)
         self.params['sources'] = self.win_sources
@@ -38,17 +38,18 @@ class Job(object):
 
         # Group sources in a dict of drives
         self.sources = {}
-        for source in self.win_sources:
-            drive, path = os.path.splitdrive(source)
+        for s in self.win_sources:
+            drive, path = os.path.splitdrive(s['path'])
+            s['path'] = path
             if not os.path.ismount(drive+'/'):
                 raise IOError("Unable to identify drive {}.".format(drive))
             if drive in self.sources:
-                self.sources[drive].append(path)
+                self.sources[drive].append(s)
             else:
-                self.sources[drive] = [path]
+                self.sources[drive] = [s]
 
-        if 'excludes' not in self.params:
-            self.params['excludes'] = []
+        if 'global_excludes' not in self.params:
+            self.params['global_excludes'] = []
 
 
 
@@ -74,6 +75,14 @@ class Job(object):
         :returns: str -- Target path ready for rsync."""
         return utils.get_cygwin_path(target)
 
+    def add_excludes(self,excludes):
+        """Add a list of strings to rsync_options as excludes.
+
+        :param excludes: List of excludes.
+        """
+        for excl in excludes:
+            self.rsync_options += ["--exclude",excl]
+
 
 class BaseSyncJob(Job):
     """Base class for sync-type jobs."""
@@ -83,18 +92,18 @@ class BaseSyncJob(Job):
 
     def run(self):
         """Run rsync to sync one or more sources with one target directory."""
-        for excl in self.params['excludes']:
-            self.rsync_options += ["--exclude",excl]
+        self.add_excludes(self.params['global_excludes'])
 
-        for drive,paths in self.sources.items():
+        for drive,sources in self.sources.items():
             logger.info("Backing up sources on {}".format(drive))
             with utils.volume_shadow(drive) as drive_root:
-                for source_path in paths:
-                    logger.info("Backing up {}{} to {}".format(drive,source_path,self.target))
-                    logger.debug("Drive root is found at {} and source path is {}.".format(drive_root,source_path))
+                for s in sources:
+                    logger.info("Backing up {}{} to {}".format(drive,s['path'],self.target))
+                    logger.debug("Drive root is found at {} and source path is {}.".format(drive_root,s['path']))
 
-                    cygsource = self.prepare_source(drive,source_path)
+                    cygsource = self.prepare_source(drive,s['path'])
                     cygtarget = self.prepare_target(self.target)
+                    self.add_excludes(s['excludes'])
 
                     rsync_call = [utils.config['rsync_bin']]+self.rsync_options+[cygsource,cygtarget]
                     logger.debug("rsync call is {}".format(' '.join(rsync_call)))
