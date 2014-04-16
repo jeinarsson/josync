@@ -41,6 +41,8 @@ class Job(object):
         for s in self.win_sources:
             drive, path = os.path.splitdrive(s['path'])
             s['path'] = path
+            if 'excludes' not in s:
+                s['excludes'] = []
             if not os.path.ismount(drive+'/'):
                 raise IOError("Unable to identify drive {}.".format(drive))
             if drive in self.sources:
@@ -165,7 +167,7 @@ def create_job_from_file(job_file):
     with open(job_file) as f:
         params = json.loads(f.read())
     if not 'type' in params:
-        raise IOError('Job file does not specify a job type.')    
+        raise IOError('Job file does not specify a job type.')
 
     if not params['type'] in job_types:
         raise IOError('Job type {} is not valid.'.format(params['type']))

@@ -1,6 +1,7 @@
 import logging
 import logging.config
 import json
+import argparse
 
 import jobs
 import utils
@@ -9,7 +10,10 @@ import utils
 logger = logging.getLogger(__name__)
 
 def main():
-    # TODO parse command line args
+    parser = argparse.ArgumentParser(description='Scripted backup using rsync on Windows.')
+    parser.add_argument('jobfile',help='path to job file specifying josync job',type=str)
+    args = parser.parse_args()
+    jobfile = args.jobfile
 
     logger.info("Session started. Josync version {}.".format(42))
 
@@ -22,9 +26,9 @@ def main():
 
     # parse and execute job file
     try:
-        job = jobs.create_job_from_file('syncjob-example.josync-job')
+        job = jobs.create_job_from_file(args.jobfile)
         job.run()
-        
+
     except Exception as e:
         logger.exception(e)
 
