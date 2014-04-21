@@ -8,6 +8,7 @@ import utils
 
 
 logger = logging.getLogger(__name__)
+run_logger = logging.getLogger('josync_run')
 
 def main():
     parser = argparse.ArgumentParser(description='Scripted backup using rsync on Windows.')
@@ -28,9 +29,9 @@ def main():
     try:
         job = jobs.create_job_from_file(args.jobfile)
         job.run()
-
+        run_logger.info("A josync job was run from {}. No errors encountered.".format(args.jobfile))
     except Exception as e:
-        logger.exception(e)
+        run_logger.exception(e)
 
 
     logger.info("Session ended.")
