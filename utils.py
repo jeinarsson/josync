@@ -129,7 +129,7 @@ def volume_shadow(drive):
 
 def enumerate_net_drives():
     '''Runs NET USE and parses output.
-    
+
     :returns: List of drive letters and corresponding UNC paths cygwin-ified (forward slashes, escaped spaces) as 2-tuple.
     '''
     returncode, output = shell_execute(["net","use"])
@@ -137,14 +137,14 @@ def enumerate_net_drives():
     # typical row to match:
     # OK           B:        \\Hawkins\Jonas Backup    Microsoft Windows Network
     #regex matches only drives with assigned letter, and only "Microsoft Windows Network" shares.
-    matches=re.finditer(r"(\w+)\s*([A-Z]:)\s*([\w\s\\\.]+\w)\s+Microsoft Windows Network", output)
+    matches=re.finditer(r"(\w*)\s*([A-Z]:)\s*([\w\s\\\.-]+\w)\s+Microsoft Windows Network", output)
     net_drives=[]
     for match in matches:
         drive = match.group(2)
         unc = match.group(3).replace('\\','/').replace(' ', '\\ ')
         logger.debug("enumerate network drives matched: 1: \"{}\", 2: \"{}\", 3: \"{}\"".format(match.group(1),match.group(2),match.group(3)))
         net_drives.append((drive,unc))
-        
+
     logger.info("net use reported {} mapped drives".format(len(net_drives)))
     logger.debug("net use drives: {}".format(net_drives))
 
