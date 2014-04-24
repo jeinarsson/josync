@@ -16,6 +16,9 @@ def main():
     args = parser.parse_args()
     jobfile = args.jobfile
 
+    if not jobfile.endswith('.josync-job'):
+        jobfile = jobfile + '.josync-job'
+
     logger.info("Session started. Josync version {}.".format(42))
 
     # enumerate net drives
@@ -27,9 +30,9 @@ def main():
 
     # parse and execute job file
     try:
-        job = jobs.create_job_from_file(args.jobfile)
+        job = jobs.create_job_from_file(jobfile)
         job.run()
-        run_logger.info("A josync job was run from {}. No errors encountered.".format(args.jobfile))
+        run_logger.info("A josync job was run from {}. No errors encountered.".format(jobfile))
     except Exception as e:
         run_logger.exception(e)
 
