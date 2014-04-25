@@ -75,4 +75,3 @@ Next steps
 Now that Josync 1.0 runs you probably want to
 	* know more about and configure the log files written by Josync: :doc:`logging`,
 	* read the details about the available :doc:`job types<jobs>`
-	* check the :doc:`config reference<settings>` on how to make exclusion patterns and much more
