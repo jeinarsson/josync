@@ -2,14 +2,29 @@
 
 Josync is a light-weight Python application for backup using rsync/cygwin, using shadow copies for read access to open files.
 
-Backup jobs are specified in minimal JSON configuration files.
+Documentation at josync.readthedocs.org
 
-It's not difficult, it's just simple.
+Please post any bugs you experience in the issue tracker!
 
-## Requirements
+# Why?
 
-Josync relies on the following:
+We wanted a simple, scriptable backup on Windows for personal use.
 
-* Python 2.7
-* A cygwin installation with rsync
-* A copy of the windows executable vshadow.exe (can be found within the Windows SDKs, e.g. at \Microsoft SDKs\Windows\v7.0\Bin\x64\vsstools\vshadow.exe, or without x64 for 32-bit version)
+# The goal
+
+Timeline backups using ``rsync`` on Windows. The aim is a ``Timeline`` job type which makes chronological backups (getting sparser as time passes) with hard links for unchanged files.
+
+# Right now
+
+We are at version 1.0 where the core functionality and utilities are in place. A regular syncronization job runs, and logging works.
+
+# Next up
+
+	* Easy installation by bundling everything in an installer
+	* Timeline job type
+	* (and see Issue tracker for more, or for posting requests!)
+
+
+# Please note
+
+Josync is a new project under development, and can not in any way be regarded as ready for production. That said, we run it on our own files without any hesitation.
