@@ -49,7 +49,7 @@ def update_config(config_file):
     if not os.path.isfile(config_file):
         logger.warning("Config file {} not found (ignoring).".format(config_file))
         return
-        
+
     logger.debug("Reading from json config {}.".format(config_file))
     with open(config_file) as f:
         config_in = json.loads(f.read())
@@ -142,8 +142,8 @@ def enumerate_net_drives():
     # typical row to match:
     # OK           B:        \\Hawkins\Jonas Backup    Microsoft Windows Network
     #regex matches only drives with assigned letter, and only "Microsoft Windows Network" shares.
-    matches=re.finditer(r"(\w*)\s*([A-Z]:)\s*([^\n]+\w)\s+Microsoft Windows Network", output)
-    
+    matches=re.finditer(r"(\w*)\s*([A-Z]:)\s*(\\\\[^\n]+\w)\s+Microsoft Windows Network", output)
+
     for match in matches:
         drive = match.group(2)
         unc = match.group(3).replace('\\','/').replace(' ', '\\ ')
