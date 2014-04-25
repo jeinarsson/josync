@@ -135,7 +135,7 @@ def volume_shadow(drive):
 def enumerate_net_drives():
     '''Runs NET USE and parses output.
 
-    :returns: List of drive letters and corresponding UNC paths cygwin-ified (forward slashes, escaped spaces) as dictionary.
+    :returns: List of drive letters and corresponding UNC path as dictionary.
     '''
     returncode, output = shell_execute(["net","use"])
 
@@ -146,7 +146,7 @@ def enumerate_net_drives():
 
     for match in matches:
         drive = match.group(2)
-        unc = match.group(3).replace('\\','/').replace(' ', '\\ ')
+        unc = match.group(3)
         logger.debug("enumerate network drives matched: 1: \"{}\", 2: \"{}\", 3: \"{}\"".format(match.group(1),match.group(2),match.group(3)))
         net_drives[drive.lower()] = unc
 

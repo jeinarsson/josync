@@ -29,6 +29,7 @@ class Job(object):
             unc = utils.net_drives[target_drive]
             self.target = unc + target_path
             logger.info("Replacing target drive {} with UNC path {}".format(target_drive, unc))
+        self.cygtarget = utils.get_cygwin_path(self.target)
 
         if not os.path.isdir(self.target):
             raise IOError("Target directory {} does not exist.".format(self.target))
@@ -119,8 +120,8 @@ class BaseSyncJob(Job):
                     logger.info("Backing up {}{} to {}".format(drive,s['path'],self.target))
                     logger.debug("Drive root is found at {} and source path is {}.".format(shadow_root,s['path']))
 
-                    cygsource = self.prepare_source(drive,shadow_root,s['path'])
-                    cygtarget = self.prepare_target(drive,s['path'],self.target)
+                    drive_letter = drive.replace(":","")
+                    cygsource = '{}/./{}{}'.format(utils.get_cygwin_path(shadow_root),utils.get_cygwin_path(s['path']))
                     self.add_excludes(s['excludes'])
 
                     rsync_call = [utils.config['rsync_bin']]+self.rsync_options+[cygsource,cygtarget]
