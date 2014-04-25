@@ -99,14 +99,14 @@ class Job(object):
         :param excludes: List of excludes.
         """
         for excl in excludes:
-            self.rsync_options += ["--exclude",excl]
+            self.rsync_options.append("--exclude={}".format(excl))
 
 
 class BaseSyncJob(Job):
     """Base class for sync-type jobs."""
     def __init__(self,params):
         super(BaseSyncJob, self).__init__(params)
-        self.rsync_options += ['-avzP','--chmod=ugo=rwX']
+        self.rsync_options += ['-az','--stats','--chmod=ugo=rwX']
 
     def run(self):
         """Run rsync to sync one or more sources with one target directory."""
@@ -145,7 +145,7 @@ class SyncJob(BaseSyncJob):
 
         # Delete option to keep up-to-date with sources
         # Relative option to create directory tree at target
-        self.rsync_options += ['--delete','--relative']
+        self.rsync_options += ['--delete','--delete-excluded','--relative']
 
     def prepare_source(self,source_drive,mount_root,source_path):
         # Insert /./ in source path to create tree at target relative to after /cygdrive/
