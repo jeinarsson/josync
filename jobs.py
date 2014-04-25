@@ -121,10 +121,13 @@ class BaseSyncJob(Job):
                     logger.debug("Drive root is found at {} and source path is {}.".format(shadow_root,s['path']))
 
                     drive_letter = drive.replace(":","")
-                    cygsource = '{}/./{}{}'.format(utils.get_cygwin_path(shadow_root),utils.get_cygwin_path(s['path']))
+                    cygsource = '{}/./{}{}'.format(
+                                    utils.get_cygwin_path(shadow_root),
+                                    drive_letter,
+                                    utils.get_cygwin_path(s['path']))
                     self.add_excludes(s['excludes'])
 
-                    rsync_call = [utils.config['rsync_bin']]+self.rsync_options+[cygsource,cygtarget]
+                    rsync_call = [utils.config['rsync_bin']]+self.rsync_options+[cygsource,self.cygtarget]
                     logger.debug("rsync call is {}".format(' '.join(rsync_call)))
                     # Run rsync
                     # TODO capture and maybe parse output
@@ -165,6 +168,8 @@ class AdditiveJob(BaseSyncJob):
     def __init__(self,params):
         super(AdditiveJob, self).__init__(params)
         logger.info("Initializing AdditiveJob.")
+        for s in self.sources:
+            s['path'] += '/'
 
     def prepare_source(self,source_drive,mount_root,source_path):
         # Add / at the end to start in folder
