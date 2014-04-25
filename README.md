@@ -1,8 +1,8 @@
-# Josync is scripted backup using rsync on Windows
+# Josync is backup using rsync on Windows
 
 Josync is a light-weight Python application for backup using rsync/cygwin, using shadow copies for read access to open files.
 
-Documentation at josync.readthedocs.org
+Documentation at http://josync.readthedocs.org
 
 Please post any bugs you experience in the issue tracker!
 
