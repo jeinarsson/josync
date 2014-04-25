@@ -63,8 +63,16 @@ Josync 1.0 contains a sample job description in ``syncjob-example.josync-job``, 
 
 Job descriptions consist of a job type, a list of source paths and a target path. Optionally, a job description may contain exclusion patterns. Excludes may be specified either globally or per source.
 
-To run this job, execute the following command::
+
+Modify the job description to make sense on your system, and try running this job::
 	
 	python josync.py syncjob-example
 
-The file extension ``.josync-job`` may optionally be left out.
+
+Next steps
+==========
+
+Now that Josync 1.0 runs you probably want to
+	* know more about and configure the log files written by Josync: :doc:`logging`,
+	* read the details about the available :doc:`job types<jobs>`
+	* check the :doc:`config reference<settings>` on how to make exclusion patterns and much more
