@@ -8,6 +8,7 @@ import logging
 
 
 config = {}
+net_drives = {}
 logger = logging.getLogger(__name__)
 
 
@@ -130,24 +131,29 @@ def volume_shadow(drive):
 def enumerate_net_drives():
     '''Runs NET USE and parses output.
 
-    :returns: List of drive letters and corresponding UNC paths cygwin-ified (forward slashes, escaped spaces) as 2-tuple.
+    :returns: List of drive letters and corresponding UNC paths cygwin-ified (forward slashes, escaped spaces) as dictionary.
     '''
     returncode, output = shell_execute(["net","use"])
 
     # typical row to match:
     # OK           B:        \\Hawkins\Jonas Backup    Microsoft Windows Network
     #regex matches only drives with assigned letter, and only "Microsoft Windows Network" shares.
-    matches=re.finditer(r"(\w*)\s*([A-Z]:)\s*([\w\s\\\.-]+\w)\s+Microsoft Windows Network", output)
-    net_drives=[]
+    matches=re.finditer(r"(\w*)\s*([A-Z]:)\s*([^\n]+\w)\s+Microsoft Windows Network", output)
+    
     for match in matches:
         drive = match.group(2)
         unc = match.group(3).replace('\\','/').replace(' ', '\\ ')
         logger.debug("enumerate network drives matched: 1: \"{}\", 2: \"{}\", 3: \"{}\"".format(match.group(1),match.group(2),match.group(3)))
-        net_drives.append((drive,unc))
+        net_drives[drive.lower()] = unc
 
     logger.info("net use reported {} mapped drives".format(len(net_drives)))
     logger.debug("net use drives: {}".format(net_drives))
 
-    config['net_drives'] = net_drives
-
     return net_drives
+
+def is_net_drive(drive):
+    '''Looks up drive in net_drives
+
+    :returns: True if drive is a net drive (is in net_drives list)
+    '''
+    return drive.lower() in net_drives.keys()

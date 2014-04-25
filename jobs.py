@@ -24,17 +24,27 @@ class Job(object):
         # Check config parameters
         self.target = self.params['target']
 
-        raw_win_sources = self.params['sources']
-        self.win_sources = []
-        for s in raw_win_sources:
-            if not os.path.isdir(s['path']):
-                logger.warning("The source directory {} does not exist (ignoring).".format(s['path']))
-            else:
-                self.win_sources.append(s)
-        self.params['sources'] = self.win_sources
+        target_drive, target_path = os.path.splitdrive(self.target)
+        if utils.is_net_drive(target_drive):
+            unc = utils.net_drives[target_drive]
+            self.target = unc + target_path
+            logger.info("Replacing target drive {} with UNC path {}".format(target_drive, unc))
 
         if not os.path.isdir(self.target):
             raise IOError("Target directory {} does not exist.".format(self.target))
+
+        # Check source path validity: exists and local
+        raw_win_sources = self.params['sources']
+        self.win_sources = []
+        for s in raw_win_sources:
+            drive, path = os.path.splitdrive(s['path'])
+            if utils.is_net_drive(drive):
+                logger.warning("The source path {} is a mounted net drive (ignoring source).".format(s['path']))
+            elif not os.path.isdir(s['path']):
+                logger.warning("The source directory {} does not exist (ignoring source).".format(s['path']))
+            else:
+                self.win_sources.append(s)
+        self.params['sources'] = self.win_sources
 
         # Group sources in a dict of drives
         self.sources = {}
