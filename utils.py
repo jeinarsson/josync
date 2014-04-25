@@ -113,12 +113,15 @@ def volume_shadow(drive):
     try:
         # mount shadow copy in a temp dir
         shadow_path = tempfile.mkdtemp()
-        vshadow_returncode, vshadow_output = shell_execute([vshadow, '-el={},{}'.format(shadow_guid, shadow_path)])
+        shadow_mount_path = "{}\\{}".format(shadow_path, drive[0])
+        os.mkdir(shadow_mount_path)
+        vshadow_returncode, vshadow_output = shell_execute([vshadow, '-el={},{}'.format(shadow_guid, shadow_mount_path)])
         if not vshadow_returncode == 0:
-            logger.error("vshadow could not mount shadow copy with GUID {} at {}.\n{}".format(shadow_guid,shadow_path,vshadow_output))
+            logger.error("vshadow could not mount shadow copy with GUID {} at {}.\n{}".format(shadow_guid,shadow_mount_path,vshadow_output))
             raise OSError("vshadow could not mount shadow copy: {}".format(shadow_guid))
 
-        logger.info("Shadow copy {} successfully created and mounted at {}".format(shadow_guid,shadow_path))
+        logger.info("Shadow copy {} successfully created and mounted at {}".format(shadow_guid,shadow_mount_path))
+
         yield shadow_path
 
     finally:
@@ -128,14 +131,15 @@ def volume_shadow(drive):
         if not vshadow_returncode == 0:
             logger.error("vshadow could not delete shadow copy with GUID {}.\n{}".format(shadow_guid,vshadow_output))
             raise OSError("vshadow could not delete shadow copy: {}".format(shadow_guid))
+        os.rmdir(shadow_mount_path)
         os.rmdir(shadow_path)
-        logger.info("Shadow copy {} of {} at {} successfully deleted".format(shadow_guid, drive, shadow_path))
+        logger.info("Shadow copy {} of {} at {} successfully deleted".format(shadow_guid, drive, shadow_mount_path))
 
 
 def enumerate_net_drives():
     '''Runs NET USE and parses output.
 
-    :returns: List of drive letters and corresponding UNC paths cygwin-ified (forward slashes, escaped spaces) as dictionary.
+    :returns: List of drive letters and corresponding UNC path as dictionary.
     '''
     returncode, output = shell_execute(["net","use"])
 
@@ -146,7 +150,7 @@ def enumerate_net_drives():
 
     for match in matches:
         drive = match.group(2)
-        unc = match.group(3).replace('\\','/').replace(' ', '\\ ')
+        unc = match.group(3)
         logger.debug("enumerate network drives matched: 1: \"{}\", 2: \"{}\", 3: \"{}\"".format(match.group(1),match.group(2),match.group(3)))
         net_drives[drive.lower()] = unc
 
