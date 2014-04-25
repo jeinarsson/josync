@@ -46,6 +46,10 @@ def update_config(config_file):
     :param config_file: Path to JSON config file.
     :type config_file: str
     """
+    if not os.path.isfile(config_file):
+        logger.warning("Config file {} not found (ignoring).".format(config_file))
+        return
+        
     logger.debug("Reading from json config {}.".format(config_file))
     with open(config_file) as f:
         config_in = json.loads(f.read())

@@ -1,8 +1,9 @@
 {
     "type": "sync",
     "sources": [
-    		{"path": "c:/", "excludes": ["windows"]}
-    	],
-    "global_excludes": ["*.sys"],
-    "target": "c:/backup"
+                {"path": "d:/phd", "excludes": []},
+                {"path": "d:/projects", "excludes": ["*.pyc;*.pyo"]}
+        ],
+    "global_excludes": ["*.hdf5"],
+    "target": "g:/Josync Backups/work"
 }
