@@ -13,7 +13,7 @@ run_logger = logging.getLogger('josync_run')
 def main():
     parser = argparse.ArgumentParser(description='Scripted backup using rsync on Windows.')
     parser.add_argument('jobfile',help='path to job file specifying josync job',type=str)
-    parser.add_argument('--debug',help='path to job file specifying josync job',action='store_true')
+    parser.add_argument('--debug',help='set all loggers to debug level',action='store_true')
     args = parser.parse_args()
     jobfile = args.jobfile
     if args.debug:
