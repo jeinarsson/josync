@@ -21,7 +21,6 @@ Contents
 
    getting_started
    jobs
-   settings
    logging
    authors
    reference
