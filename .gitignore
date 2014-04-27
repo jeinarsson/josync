@@ -2,6 +2,7 @@
 *.pyo
 user.josync-config
 *.josync-job
+*.josync-job-success
 !*example.josync-job
 *test.py
 *.exe
