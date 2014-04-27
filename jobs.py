@@ -3,6 +3,7 @@ import json
 import os
 import logging
 import subprocess as sp
+import re
 
 logger = logging.getLogger(__name__)
 
@@ -12,7 +13,10 @@ class Job(object):
     """Parent class for backup jobs."""
     def __init__(self,params):
         super(Job, self).__init__()
-        self.rsync_options = []
+        self.rsync_base_options = ['--stats','--chmod=ugo=rwX','--compress']
+        if not utils.config['is_pythonw']:
+            self.rsync_base_options += ['--verbose']
+
 
         logger.info("Initializing Job")
         self.params = params
@@ -81,7 +85,8 @@ class Job(object):
         return options
 
     def run_rsync(self):
-        rsync_process = utils.Rsync(self.rsync_source,self.rsync_target,self.rsync_options)
+        rsync_options = self.rsync_base_options + self.rsync_options
+        rsync_process = utils.Rsync(self.rsync_source,self.rsync_target,rsync_options)
         rsync_process.wait()
 
         if rsync_process.returncode != 0:
@@ -90,12 +95,30 @@ class Job(object):
         else:
             logger.info("rsync finished successfully.")
 
+        # Parse rsync stats output, typically finde the numbers in lines like:
+        # Number of files: 211009
+        # Number of files transferred: 410
+        # Total file size: 903119614118 bytes
+        # Total transferred file size: 9046197739 bytes
+        pattern_dict = {
+            "num_files": re.compile("Number of files:\s+(\d+)"),
+            "files_transferred": re.compile("Number of files transferred:\s+(\d+)"),
+            "tot_file_size": re.compile("Total file size:\s+(\d+)"),
+            "file_size_transferred": re.compile("Total transferred file size:\s+(\d+)")
+        }
+        self.stats = {}
+        for line in rsync_process.output_buffer:
+            for key,pattern in pattern_dict.items():
+                match = pattern.match(line)
+                if match:
+                    self.stats[key] = float(match.group(1))
+
 
 class BaseSyncJob(Job):
     """Base class for sync-type jobs."""
     def __init__(self,params):
         super(BaseSyncJob, self).__init__(params)
-        self.rsync_base_options = ['-az','--stats','--chmod=ugo=rwX']
+        self.rsync_base_options += ['--archive']
 
     def run(self):
         """Run rsync to sync one or more sources with one target directory."""
@@ -114,7 +137,7 @@ class BaseSyncJob(Job):
                                     drive_letter,
                                     utils.get_cygwin_path(s['path']))
                     self.rsync_target = self.cygtarget
-                    self.rsync_options = self.rsync_base_options + self.excludes_to_options(s['excludes'])
+                    self.rsync_options = self.excludes_to_options(s['excludes'])
 
                     self.run_rsync()
 
@@ -125,7 +148,7 @@ class SyncJob(BaseSyncJob):
         super(SyncJob, self).__init__(params)
         logger.info("Initializing SyncJob.")
 
-        # Delete option to keep up-to-date with sources
+        # Delete option (also excluded) to keep up-to-date with sources
         # Relative option to create directory tree at target
         self.rsync_base_options += ['--delete','--delete-excluded','--relative']
 

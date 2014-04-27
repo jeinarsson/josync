@@ -2,6 +2,8 @@ import logging
 import logging.config
 import json
 import argparse
+import sys
+import os
 
 import jobs
 import utils
@@ -35,7 +37,13 @@ def main():
     try:
         job = jobs.create_job_from_file(jobfile)
         job.run()
-        run_logger.info("A josync job was run from {}. No errors encountered.".format(jobfile))
+        try:
+            transferred = job.stats['file_size_transferred']/1024.0
+            total = job.stats['tot_file_size']/1024.0
+            run_logger.info("A josync job was run from {}. {:.1f} of {:.1f} kB updated ({:.1f} %). No errors encountered."\
+                .format(jobfile,transferred,total,transferred/total))
+        except KeyError as e:
+            run_logger.info("A josync job was run from {}. No errors were encountered, but stats could not retrieved".format(jobfile))
     except Exception as e:
         run_logger.exception(e)
 
@@ -46,6 +54,7 @@ def main():
 
 
 if __name__ == '__main__':
+    utils.config['is_pythonw'] = (os.path.split(os.path.splitext(sys.executable)[0])[1] == "pythonw")
     with open('default.josync-logging') as f:
         log_config = json.loads(f.read())
     logging.config.dictConfig(log_config)
