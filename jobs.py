@@ -1,8 +1,10 @@
-import utils
+﻿import utils
 import json
 import os
 import logging
 import subprocess as sp
+import re
+import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -12,16 +14,24 @@ class Job(object):
     """Parent class for backup jobs."""
     def __init__(self,params):
         super(Job, self).__init__()
-        self.rsync_options = []
+        self.rsync_base_options = ['--stats','--chmod=ugo=rwX','--compress']
+        if not utils.config['is_pythonw']:
+            self.rsync_base_options += ['--verbose']
+
 
         logger.info("Initializing Job")
+
         self.params = params
 
+        filename, fileext = os.path.splitext(os.path.basename(params['job_file']))
         if 'name' not in self.params:
-            filename,filext = os.path.splitext(os.path.basename(params['job_file']))
-            self.params['name'] =filename
+            self.params['name'] = filename
 
-        # Check config parameters
+        self.last_successful_run = None
+        self.success_file = filename + ".josync-job-success"
+        if os.path.isfile(self.success_file):
+            self.last_successful_run = utils.get_file_modification_date(self.success_file)
+
         self.target = self.params['target']
 
         target_drive, target_path = os.path.splitdrive(self.target)
@@ -69,49 +79,98 @@ class Job(object):
     def run(self):
         raise NotImplementedError("Run method of job was not implemented.")
 
-    def prepare_source(self,source_drive,mount_root,source_path):
-        """Prepare source for rsync call.
+    def failure_notification(self):
 
-        :param source_drive: Drive letter for source drive.
-        :type source_drive: str
-        :param mount_root: Temp dir for source drive shadow copy.
-        :type mount_root: str
-        :param source_path: Relative path to source from drive root.
-        :type source_path: str
-        :returns: str -- Source path ready for rsync.
-        """
-        return utils.get_cygwin_path("{}{}".format(mount_root,source_path))
+        if not 'failure_notification' in self.params:
+            return
 
-    def prepare_target(self,source_drive,source_path,target_path):
-        """Prepare target for rsync call.
 
-        :param source_drive: Drive letter for source drive.
-        :type source_drive: str
-        :param source_path: Relative path to source from drive root.
-        :type source_path: str
-        :param target_path: Path to target.
-        :type target_path: str
-        :returns: str -- Target path ready for rsync."""
-        return utils.get_cygwin_path(target_path)
+        notification_options = {
+            "always": False
+        }
+        notification_options.update(self.params['failure_notification'])
 
-    def add_excludes(self,excludes):
-        """Add a list of strings to rsync_options as excludes.
+        if not 'e-mail' in notification_options:
+            raise ValueError("Notifications enabled, but no e-mail address specified in job file.")
+            return
+
+        will_send = notification_options["always"]
+
+        if not will_send and self.last_successful_run == None:
+            logger.warning("Failure notification not sent because no previous successful run detected.")
+            return
+
+        if not will_send and 'hours_since_success' in notification_options:
+            hours_since_success = (datetime.datetime.now()-self.last_successful_run).total_seconds()/3600.
+            if hours_since_success > notification_options["hours_since_success"]:
+                will_send = True
+            else:
+                logger.info("Failure notification not sent, because time elapsed since last successful run was only {} hour(s)".format(hours_since_success))
+
+        if will_send:
+            body = """Your Josync backup job {} have failed and triggered this e-mail notification.
+
+Please check the Josync logs for details.
+
+""".format(self.params['name'])
+            logger.info("Sending failure notification e-mail.")
+            utils.send_email(notification_options["e-mail"], "Josync backup job {} failed.".format(self.params['name']),body)
+
+    def record_successful_run(self):
+        if not 'failure_notification' in self.params:
+            return
+        
+        open(self.success_file, 'w').close()
+
+    def excludes_to_options(self,excludes):
+        """Convert a list of strings to a list of exclude options to rsync.
 
         :param excludes: List of excludes.
         """
+        options = []
         for excl in excludes:
-            self.rsync_options.append("--exclude={}".format(excl))
+            options.append("--exclude={}".format(excl))
+        return options
+
+    def run_rsync(self):
+        rsync_options = self.rsync_base_options + self.rsync_options
+        rsync_process = utils.Rsync(self.rsync_source,self.rsync_target,rsync_options)
+        rsync_process.wait()
+
+        if rsync_process.returncode != 0:
+            # Appropriate exception type?
+            raise IOError("rsync returned with exit code {}.".format(rsync_process.returncode))
+        else:
+            logger.info("rsync finished successfully.")
+
+        # Parse rsync stats output, typically finde the numbers in lines like:
+        # Number of files: 211009
+        # Number of files transferred: 410
+        # Total file size: 903119614118 bytes
+        # Total transferred file size: 9046197739 bytes
+        pattern_dict = {
+            "num_files": re.compile("Number of files:\s+(\d+)"),
+            "files_transferred": re.compile("Number of files transferred:\s+(\d+)"),
+            "tot_file_size": re.compile("Total file size:\s+(\d+)"),
+            "file_size_transferred": re.compile("Total transferred file size:\s+(\d+)")
+        }
+        self.stats = {}
+        for line in rsync_process.output_buffer:
+            for key,pattern in pattern_dict.items():
+                match = pattern.match(line)
+                if match:
+                    self.stats[key] = float(match.group(1))
 
 
 class BaseSyncJob(Job):
     """Base class for sync-type jobs."""
     def __init__(self,params):
         super(BaseSyncJob, self).__init__(params)
-        self.rsync_options += ['-az','--stats','--chmod=ugo=rwX']
+        self.rsync_base_options += ['--archive']
 
     def run(self):
         """Run rsync to sync one or more sources with one target directory."""
-        self.add_excludes(self.params['global_excludes'])
+        self.rsync_base_options += self.excludes_to_options(self.params['global_excludes'])
 
         for drive,sources in self.sources.items():
             logger.info("Backing up sources on {}".format(drive))
@@ -120,25 +179,15 @@ class BaseSyncJob(Job):
                     logger.info("Backing up {}{} to {}".format(drive,s['path'],self.target))
                     logger.debug("Drive root is found at {} and source path is {}.".format(shadow_root,s['path']))
 
-                    drive_letter = drive.replace(":","")
-                    cygsource = '{}/./{}{}'.format(
+                    drive_letter = drive[0]
+                    self.rsync_source = '{}/./{}{}'.format(
                                     utils.get_cygwin_path(shadow_root),
                                     drive_letter,
                                     utils.get_cygwin_path(s['path']))
-                    self.add_excludes(s['excludes'])
+                    self.rsync_target = self.cygtarget
+                    self.rsync_options = self.excludes_to_options(s['excludes'])
 
-                    rsync_call = [utils.config['rsync_bin']]+self.rsync_options+[cygsource,self.cygtarget]
-                    logger.debug("rsync call is {}".format(' '.join(rsync_call)))
-                    # Run rsync
-                    # TODO capture and maybe parse output
-                    logger.info("Running rsync.")
-                    rsync_process = sp.Popen(rsync_call)
-                    rsync_process.wait()
-                    if rsync_process.returncode != 0:
-                        # Appropriate exception type?
-                        raise IOError("rsync returned with exit code {}.".format(rsync_process.returncode))
-                    else:
-                        logger.info("rsync finished successfully.")
+                    self.run_rsync()
 
 
 class SyncJob(BaseSyncJob):
@@ -147,20 +196,9 @@ class SyncJob(BaseSyncJob):
         super(SyncJob, self).__init__(params)
         logger.info("Initializing SyncJob.")
 
-        # Delete option to keep up-to-date with sources
+        # Delete option (also excluded) to keep up-to-date with sources
         # Relative option to create directory tree at target
-        self.rsync_options += ['--delete','--delete-excluded','--relative']
-
-    def prepare_source(self,source_drive,mount_root,source_path):
-        # Insert /./ in source path to create tree at target relative to after /cygdrive/
-        cyg_root = utils.get_cygwin_path(mount_root)
-        cyg_source_path = utils.get_cygwin_path(source_path)
-        full_source_path = '{}/.{}'.format(cyg_root,cyg_source_path)
-        return full_source_path
-
-    def prepare_target(self,source_drive,source_path,target_path):
-        drive = source_drive.replace(":","")
-        return super(SyncJob,self).prepare_target(source_drive,source_path,target_path)+'/{}'.format(drive)
+        self.rsync_base_options += ['--delete','--delete-excluded','--relative']
 
 
 class AdditiveJob(BaseSyncJob):
@@ -170,10 +208,6 @@ class AdditiveJob(BaseSyncJob):
         logger.info("Initializing AdditiveJob.")
         for s in self.sources:
             s['path'] += '/'
-
-    def prepare_source(self,source_drive,mount_root,source_path):
-        # Add / at the end to start in folder
-        return super(AdditiveJob, self).prepare_source(source_drive,mount_root,source_path)+'/'
 
 
 # enumerate all possible job types and their constructors

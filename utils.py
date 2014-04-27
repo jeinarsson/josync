@@ -1,12 +1,19 @@
-import os
+﻿import os
 import json
 import subprocess as sp
 from contextlib import contextmanager
 import re
 import tempfile
 import logging
+import collections
+import threading
+import sys
+import datetime
+import smtplib
+from email.mime.text import MIMEText
+from email.header import Header
 
-
+version = "0.0"
 config = {}
 net_drives = {}
 logger = logging.getLogger(__name__)
@@ -82,7 +89,7 @@ def shell_execute(command):
     :type command: str
     :returns: 2-tuple with return code and stdout.
     """
-    process = sp.Popen(command, stdout=sp.PIPE)
+    process = sp.Popen(command, stdout=sp.PIPE, stderr=sp.PIPE, stdin=sp.PIPE, startupinfo=config['subprocess_startupinfo'])
 
     stdout = process.communicate()[0].strip()
     return (process.returncode, stdout)
@@ -165,3 +172,97 @@ def is_net_drive(drive):
     :returns: True if drive is a net drive (is in net_drives list)
     '''
     return drive.lower() in net_drives.keys()
+
+
+class Rsync(sp.Popen):
+    """Sub-class of subprocess.Popen to run rsync process."""
+    def __init__(self, source, target, options=None):
+        # Construct rsync call and create process.
+        options = options if options is not None else []
+        self.rsync_call = [config['rsync_bin']]+options+[source,target]
+        logger.debug("rsync process created from call {}".format(' '.join(self.rsync_call)))
+        logger.info("Starting rsync process.")
+        super(Rsync, self).__init__(self.rsync_call,
+                                    stdout=sp.PIPE, stderr=sp.PIPE, stdin=sp.PIPE,
+                                    bufsize=1,startupinfo=config['subprocess_startupinfo'])
+
+        self.output_buffer = collections.deque(maxlen=20)
+        self.threads = [
+            self.output_thread(self.stdout,self.stdout_send),
+            self.output_thread(self.stderr,self.stderr_send)
+        ]
+
+
+    def output_thread(self,pipe,send):
+        """Start thread handling output from rsync."""
+
+        def handle_output(out):
+            for line in iter(out.readline, b''):
+                # Do something with line
+                send(line.rstrip())
+
+        # start thread
+        t = threading.Thread(target=handle_output,
+                             args=(pipe,))
+        t.start()
+        return t
+
+    def stdout_send(self,line):
+        sys.stdout.write(line+'\n')
+        self.output_buffer.append(line)
+
+    def stderr_send(self,line):
+        logger.warning(line)
+
+    def wait(self):
+        super(Rsync, self).wait()
+        for t in self.threads:
+            t.join()
+
+
+def get_file_modification_date(filename):
+    """Read 'last modified' metadata of file
+
+    :param filename: filename (with path)
+    :type filename: str
+    :returns: Datetime object with last modified datetime
+    """
+    t = os.path.getmtime(filename)
+    return datetime.datetime.fromtimestamp(t)
+
+def send_email(msg_address, msg_subject, msg_body):
+    """Sends an e-mail notification using SMTP settings in config.
+
+	:param msg_subject: Message subject.
+	:type msg_subject: str
+	:param msg_body: Message body.
+	:type msg_body: str
+	:param user_email: E-mail to send notification to.
+	:type user_email: str
+	"""
+    try:
+        s = None
+        success = False
+        smtp = config['smtp']
+
+        msg = MIMEText(msg_body, 'plain', 'utf-8')
+        msg['Subject'] = Header(msg_subject, 'utf-8')
+        msg['From'] = smtp['from_address']
+        msg['To'] = msg_address
+
+        s = smtplib.SMTP_SSL(smtp['host'], smtp['port'], timeout=10)
+
+        logger.debug("Attempting to log in to {}:{} as {} and send e-mail to {}.".format(smtp['host'],smtp['port'],smtp['username'], msg_address))
+        s.login(smtp['username'], smtp['password'])
+        s.sendmail(msg['From'], msg['To'], msg.as_string())
+        success = True
+        logger.info("E-mail successfully sent")
+    except KeyError as e:
+        logger.error("Could not find required setting in config: {}".format(str(e)))
+    except Exception as e:
+        logger.exception(e)
+    finally:
+        if not success:
+            logger.info("Could not send e-mail.")
+        if s:
+            s.quit()

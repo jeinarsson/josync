@@ -6,10 +6,43 @@ This version of Josync provides two types of jobs:
 	1. sync
 	2. add
 
+
+Example of failure notification settings::
+
+    "failure_notification": {
+        "always": false,
+        "hours_since_success": 4,
+        "e-mail": "me@domain.com"
+    }
+
+Requires smtp options in config file::
+
+    "smtp": {
+        "host": "mysmtp.com",
+        "port": 465,
+        "username": "username",
+        "password": "password",
+        "from_address": "me@domain.com"
+    }
+
+
 sync
 ====
 
 A ``sync`` job does what you expect from a backup program: it mirrors the source onto the target, and only updates changed files. In particular, when files are removed on the source, they are also removed on the target.
+
+Example jobfile::
+
+    {
+        "type": "sync",
+        "sources": [
+                    {"path": "d:/phd", "excludes": []},
+                    {"path": "d:/projects", "excludes": ["*.pyc;*.pyo"]}
+            ],
+        "global_excludes": ["*.hdf5"],
+        "target": "g:/Josync Backups/work"
+    }
+
 
 add
 ===
@@ -21,5 +54,14 @@ The typical use-case is a music library stored centrally. Imagine that you keep 
 A Josync ``add`` job will add your new addition to the main library store, but it will never remove anything.
 
 
+Example jobfile::
 
+    {
+        "type": "add",
+        "sources": [
+                    {"path": "d:/music", "excludes": []}
+            ],
+        "global_excludes": ["*.hdf5"],
+        "target": "g:/music"
+    }
 
