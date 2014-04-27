@@ -297,16 +297,16 @@ class JobDescriptionValueError(Exception):
     pass
 
 
-class FailureNotificator(object):
+class FailureNotifier(object):
     """Keeps track of when the last time a job was successfully run.
 
     Notifies user per e-mail."""
     def __init__(self, job_file):
-        super(FailureNotificator, self).__init__()
+        super(FailureNotifier, self).__init__()
 
         self.job_file = job_file
 
-        logger.info("Creating FailureNotificator from {}.".format(job_file))
+        logger.info("Creating FailureNotifier from {}.".format(job_file))
         with open(job_file) as f:
             params = json.loads(f.read())
 

@@ -36,7 +36,7 @@ def main():
     # parse job file and run job
     try:
         if args.notifications:
-            failure_notificator = utils.FailureNotificator(jobfile)
+            failure_notifier = utils.FailureNotifier(jobfile)
 
         job = jobs.create_job_from_file(jobfile)
         run_logger.info("A josync job was created from {}. No errors encountered.".format(jobfile))
@@ -50,7 +50,7 @@ def main():
             run_logger.info("A josync job was run from {}. No errors were encountered, but stats could not retrieved".format(jobfile))
 
         if args.notifications:
-            job.record_successful_run()
+            failure_notifier.record_successful_run()
 
     except utils.JobDescriptionKeyError as e:
         run_logger.error("The required job parameter '{}' was not found in the job file.".format(e))
@@ -61,11 +61,11 @@ def main():
     except utils.TargetNotFoundError as e:
         run_logger.error("The target directory {} does not exist.".format(e))
         if args.notifications:
-            failure_notificator.notify()
+            failure_notifier.notify()
     except Exception as e:
         run_logger.exception(e)
         if args.notifications:
-            failure_notificator.notify()
+            failure_notifier.notify()
 
     logger.info("Session ended.")
 
