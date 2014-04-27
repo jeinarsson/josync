@@ -1,15 +1,38 @@
-import os
+﻿import os
 import json
 import subprocess as sp
 from contextlib import contextmanager
 import re
 import tempfile
 import logging
+import collections
+import threading
+import sys
+import datetime
+import smtplib
+from email.mime.text import MIMEText
+from email.header import Header
 
-
+version = "0.0"
 config = {}
 net_drives = {}
 logger = logging.getLogger(__name__)
+
+
+def initialize():
+    # subprocess flags 
+    config['is_pythonw'] = (os.path.split(os.path.splitext(sys.executable)[0])[1] == "pythonw")
+    startupinfo = sp.STARTUPINFO()
+    startupinfo.dwFlags |= sp.STARTF_USESHOWWINDOW
+    startupinfo.wShowWindow = sp.SW_HIDE
+    config['subprocess_startupinfo'] = startupinfo
+
+    # enumerate net drives
+    enumerate_net_drives()
+
+    # parse global settings file
+    read_config(default_cfg='default.josync-config',user_cfg='user.josync-config')
+
 
 
 def read_config(default_cfg,user_cfg):
@@ -82,7 +105,7 @@ def shell_execute(command):
     :type command: str
     :returns: 2-tuple with return code and stdout.
     """
-    process = sp.Popen(command, stdout=sp.PIPE)
+    process = sp.Popen(command, stdout=sp.PIPE, stderr=sp.PIPE, stdin=sp.PIPE, startupinfo=config['subprocess_startupinfo'])
 
     stdout = process.communicate()[0].strip()
     return (process.returncode, stdout)
@@ -106,7 +129,7 @@ def volume_shadow(drive):
     vshadow_returncode, vshadow_output = shell_execute([vshadow, '-p', '-nw', drive])
     guidmatch = re.search(r"\* SNAPSHOT ID = (\{[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}\})", vshadow_output)
     if not guidmatch or not vshadow_returncode == 0:
-        raise OSError("vhadow did not produce a GUID. Return code: {}".format(vshadow_returncode))
+        raise OSError("vhadow did not produce a GUID. Return code: {} (hint: try running as administrator)".format(vshadow_returncode))
     shadow_guid = guidmatch.group(1)
     logger.debug("Shadow copy GUID: {}".format(shadow_guid))
 
@@ -165,3 +188,177 @@ def is_net_drive(drive):
     :returns: True if drive is a net drive (is in net_drives list)
     '''
     return drive.lower() in net_drives.keys()
+
+
+class Rsync(sp.Popen):
+    """Sub-class of subprocess.Popen to run rsync process."""
+    def __init__(self, source, target, options=None):
+        # Construct rsync call and create process.
+        options = options if options is not None else []
+        self.rsync_call = [config['rsync_bin']]+options+[source,target]
+        logger.debug("rsync process created from call {}".format(' '.join(self.rsync_call)))
+        logger.info("Starting rsync process.")
+        super(Rsync, self).__init__(self.rsync_call,
+                                    stdout=sp.PIPE, stderr=sp.PIPE, stdin=sp.PIPE,
+                                    bufsize=1,startupinfo=config['subprocess_startupinfo'])
+
+        self.output_buffer = collections.deque(maxlen=20)
+        self.threads = [
+            self.output_thread(self.stdout,self.stdout_send),
+            self.output_thread(self.stderr,self.stderr_send)
+        ]
+
+
+    def output_thread(self,pipe,send):
+        """Start thread handling output from rsync."""
+
+        def handle_output(out):
+            for line in iter(out.readline, b''):
+                # Do something with line
+                send(line.rstrip())
+
+        # start thread
+        t = threading.Thread(target=handle_output,
+                             args=(pipe,))
+        t.start()
+        return t
+
+    def stdout_send(self,line):
+        sys.stdout.write(line+'\n')
+        self.output_buffer.append(line)
+
+    def stderr_send(self,line):
+        logger.warning(line)
+
+    def wait(self):
+        super(Rsync, self).wait()
+        for t in self.threads:
+            t.join()
+
+
+def get_file_modification_date(filename):
+    """Read 'last modified' metadata of file
+
+    :param filename: filename (with path)
+    :type filename: str
+    :returns: Datetime object with last modified datetime
+    """
+    t = os.path.getmtime(filename)
+    return datetime.datetime.fromtimestamp(t)
+
+def send_email(msg_address, msg_subject, msg_body):
+    """Sends an e-mail notification using SMTP settings in config.
+
+	:param msg_subject: Message subject.
+	:type msg_subject: str
+	:param msg_body: Message body.
+	:type msg_body: str
+	:param user_email: E-mail to send notification to.
+	:type user_email: str
+	"""
+    try:
+        s = None
+        success = False
+        smtp = config['smtp']
+
+        msg = MIMEText(msg_body, 'plain', 'utf-8')
+        msg['Subject'] = Header(msg_subject, 'utf-8')
+        msg['From'] = smtp['from_address']
+        msg['To'] = msg_address
+
+        s = smtplib.SMTP_SSL(smtp['host'], smtp['port'], timeout=10)
+
+        logger.debug("Attempting to log in to {}:{} as {} and send e-mail to {}.".format(smtp['host'],smtp['port'],smtp['username'], msg_address))
+        s.login(smtp['username'], smtp['password'])
+        s.sendmail(msg['From'], msg['To'], msg.as_string())
+        success = True
+        logger.info("E-mail successfully sent")
+    except KeyError as e:
+        logger.error("Could not find required setting in config: {}".format(str(e)))
+    except Exception as e:
+        logger.exception(e)
+    finally:
+        if not success:
+            logger.info("Could not send e-mail.")
+        if s:
+            s.quit()
+
+
+class TargetNotFoundError(Exception):
+    pass
+
+class JsonSyntaxError(Exception):
+    pass
+
+class JobDescriptionKeyError(Exception):
+    pass
+
+class JobDescriptionValueError(Exception):
+    pass
+
+
+class FailureNotificator(object):
+    """Keeps track of when the last time a job was successfully run.
+
+    Notifies user per e-mail."""
+    def __init__(self, job_file):
+        super(FailureNotificator, self).__init__()
+
+        self.job_file = job_file
+
+        logger.info("Creating FailureNotificator from {}.".format(job_file))
+        with open(job_file) as f:
+            params = json.loads(f.read())
+
+        try:
+            self.notification_options = {
+                'always': False
+                }
+            self.notification_options.update(params['failure_notification'])
+            if not 'e-mail' in self.notification_options:
+                raise JobDescriptionKeyError('e-mail')
+        except KeyError:
+            self.notification_options = None
+
+        filename, fileext = os.path.splitext(os.path.basename(job_file))
+        self.last_successful_run = None
+        self.last_successful_run_filename = filename + ".josync-job-success"
+        if os.path.isfile(self.last_successful_run_filename):
+            self.last_successful_run = get_file_modification_date(self.last_successful_run_filename)
+
+
+    def notify(self):
+        """Check if conditions for notification are fulfilled, and send e-mail.
+        """
+        if not self.notification_options:
+            return
+
+        will_send = self.notification_options["always"]
+
+        if not will_send and self.last_successful_run == None:
+            logger.warning("Failure notification not sent because no previous successful run detected.")
+            return
+
+        if not will_send and 'hours_since_success' in self.notification_options:
+            hours_since_success = (datetime.datetime.now()-self.last_successful_run).total_seconds()/3600.
+            if hours_since_success > self.notification_options["hours_since_success"]:
+                will_send = True
+            else:
+                logger.info("Failure notification not sent, because time elapsed since last successful run was only {} hour(s)".format(hours_since_success))
+
+        if will_send:
+            body = """Your Josync backup job {} have failed and triggered this e-mail notification.
+
+Please check the Josync logs for details.
+
+""".format(self.job_file)
+            logger.info("Sending failure notification e-mail.")
+            send_email(self.notification_options["e-mail"], "Josync backup job {} failed.".format(self.job_file),body)
+
+    def record_successful_run(self):
+        """ Create an empty .josync-job-success file to mark a successful run.
+        """
+        if not self.notification_options:
+            return
+        
+        open(self.last_successful_run_filename, 'w').close()
