@@ -5,6 +5,9 @@ from contextlib import contextmanager
 import re
 import tempfile
 import logging
+import collections
+import threading
+import sys
 
 
 config = {}
@@ -82,7 +85,7 @@ def shell_execute(command):
     :type command: str
     :returns: 2-tuple with return code and stdout.
     """
-    process = sp.Popen(command, stdout=sp.PIPE)
+    process = sp.Popen(command, stdout=sp.PIPE, stderr=sp.PIPE, stdin=sp.PIPE)
 
     stdout = process.communicate()[0].strip()
     return (process.returncode, stdout)
@@ -165,3 +168,49 @@ def is_net_drive(drive):
     :returns: True if drive is a net drive (is in net_drives list)
     '''
     return drive.lower() in net_drives.keys()
+
+
+class Rsync(sp.Popen):
+    """Sub-class of subprocess.Popen to run rsync process."""
+    def __init__(self, source, target, options=None):
+        # Construct rsync call and create process.
+        options = options if options is not None else []
+        self.rsync_call = [config['rsync_bin']]+options+[source,target]
+        logger.debug("rsync process created from call {}".format(' '.join(self.rsync_call)))
+        logger.info("Starting rsync process.")
+        super(Rsync, self).__init__(self.rsync_call,stdout=sp.PIPE, stderr=sp.PIPE,bufsize=1)
+
+        self.output_buffer = collections.deque(maxlen=20)
+        self.threads = [
+            self.output_thread(self.stdout,self.stdout_send),
+            self.output_thread(self.stderr,self.stderr_send)
+        ]
+
+
+    def output_thread(self,pipe,send):
+        """Start thread handling output from rsync."""
+
+        def handle_output(out):
+            for line in iter(out.readline, b''):
+                # Do something with line
+                send(line.rstrip())
+
+        # start thread
+        t = threading.Thread(target=handle_output,
+                             args=(pipe,))
+        t.start()
+        return t
+
+    def stdout_send(self,line):
+        sys.stdout.write(line+'\n')
+        self.output_buffer.append(line)
+
+    def stderr_send(self,line):
+        logger.warning(line)
+
+    def wait(self):
+        super(Rsync, self).wait()
+        for t in self.threads:
+            t.join()
+
+

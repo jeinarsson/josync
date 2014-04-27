@@ -70,20 +70,20 @@ class Job(object):
         raise NotImplementedError("Run method of job was not implemented.")
 
 
-    def add_excludes(self,excludes):
-        """Add a list of strings to rsync_options as excludes.
+    def excludes_to_options(self,excludes):
+        """Add a list of strings to rsync_global_options as excludes.
 
         :param excludes: List of excludes.
         """
+        options = []
         for excl in excludes:
-            self.rsync_options.append("--exclude={}".format(excl))
+            options.append("--exclude={}".format(excl))
+        return options
 
-    def run_rsync(self, rsync_call):
-        logger.debug("rsync call is {}".format(' '.join(rsync_call)))
-
-        logger.info("Running rsync.")
-        rsync_process = sp.Popen(rsync_call)
+    def run_rsync(self):
+        rsync_process = utils.Rsync(self.rsync_source,self.rsync_target,self.rsync_options)
         rsync_process.wait()
+
         if rsync_process.returncode != 0:
             # Appropriate exception type?
             raise IOError("rsync returned with exit code {}.".format(rsync_process.returncode))
@@ -95,11 +95,11 @@ class BaseSyncJob(Job):
     """Base class for sync-type jobs."""
     def __init__(self,params):
         super(BaseSyncJob, self).__init__(params)
-        self.rsync_options += ['-az','--stats','--chmod=ugo=rwX']
+        self.rsync_base_options = ['-az','--stats','--chmod=ugo=rwX']
 
     def run(self):
         """Run rsync to sync one or more sources with one target directory."""
-        self.add_excludes(self.params['global_excludes'])
+        self.rsync_base_options += self.excludes_to_options(self.params['global_excludes'])
 
         for drive,sources in self.sources.items():
             logger.info("Backing up sources on {}".format(drive))
@@ -109,15 +109,14 @@ class BaseSyncJob(Job):
                     logger.debug("Drive root is found at {} and source path is {}.".format(shadow_root,s['path']))
 
                     drive_letter = drive[0]
-                    cygsource = '{}/./{}{}'.format(
+                    self.rsync_source = '{}/./{}{}'.format(
                                     utils.get_cygwin_path(shadow_root),
                                     drive_letter,
                                     utils.get_cygwin_path(s['path']))
-                    self.add_excludes(s['excludes'])
+                    self.rsync_target = self.cygtarget
+                    self.rsync_options = self.rsync_base_options + self.excludes_to_options(s['excludes'])
 
-                    rsync_call = [utils.config['rsync_bin']]+self.rsync_options+[cygsource,self.cygtarget]
-
-                    self.run_rsync(rsync_call)
+                    self.run_rsync()
 
 
 class SyncJob(BaseSyncJob):
@@ -128,7 +127,7 @@ class SyncJob(BaseSyncJob):
 
         # Delete option to keep up-to-date with sources
         # Relative option to create directory tree at target
-        self.rsync_options += ['--delete','--delete-excluded','--relative']
+        self.rsync_base_options += ['--delete','--delete-excluded','--relative']
 
 
 class AdditiveJob(BaseSyncJob):
