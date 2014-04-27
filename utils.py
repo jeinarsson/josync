@@ -19,6 +19,21 @@ net_drives = {}
 logger = logging.getLogger(__name__)
 
 
+def initialize():
+    # enumerate net drives
+    enumerate_net_drives()
+
+    # parse global settings file
+    read_config(default_cfg='default.josync-config',user_cfg='user.josync-config')
+
+    # subprocess flags 
+    config['is_pythonw'] = (os.path.split(os.path.splitext(sys.executable)[0])[1] == "pythonw")
+    startupinfo = sp.STARTUPINFO()
+    startupinfo.dwFlags |= sp.STARTF_USESHOWWINDOW
+    startupinfo.wShowWindow = sp.SW_HIDE
+    utils.config['subprocess_startupinfo'] = startupinfo
+
+
 def read_config(default_cfg,user_cfg):
     """Reads config file and checks values.
 
