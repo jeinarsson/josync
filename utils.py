@@ -178,7 +178,7 @@ class Rsync(sp.Popen):
         self.rsync_call = [config['rsync_bin']]+options+[source,target]
         logger.debug("rsync process created from call {}".format(' '.join(self.rsync_call)))
         logger.info("Starting rsync process.")
-        super(Rsync, self).__init__(self.rsync_call,stdout=sp.PIPE, stderr=sp.PIPE,bufsize=1)
+        super(Rsync, self).__init__(self.rsync_call,stdout=sp.PIPE, stderr=sp.PIPE, stdin=sp.PIPE,bufsize=1)
 
         self.output_buffer = collections.deque(maxlen=20)
         self.threads = [
