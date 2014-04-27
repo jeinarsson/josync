@@ -32,11 +32,7 @@ def main():
     if args.notifications:
         logger.info("Failure notifications are enabled.")
 
-    # enumerate net drives
-    utils.enumerate_net_drives()
-
-    # parse global settings file
-    utils.read_config(default_cfg='default.josync-config',user_cfg='user.josync-config')
+    utils.initialize()
 
     # parse job file and run job
     try:
@@ -71,12 +67,6 @@ def main():
 
 
 if __name__ == '__main__':
-    utils.config['is_pythonw'] = (os.path.split(os.path.splitext(sys.executable)[0])[1] == "pythonw")
-    startupinfo = sp.STARTUPINFO()
-    startupinfo.dwFlags |= sp.STARTF_USESHOWWINDOW
-    startupinfo.wShowWindow = sp.SW_HIDE
-    utils.config['subprocess_startupinfo'] = startupinfo
-
     with open('default.josync-logging') as f:
         log_config = json.loads(f.read())
     logging.config.dictConfig(log_config)

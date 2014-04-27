@@ -8,20 +8,17 @@ import datetime
 
 logger = logging.getLogger(__name__)
 
-
-
 class Job(object):
     """Parent class for backup jobs."""
     def __init__(self,params):
         super(Job, self).__init__()
+        logger.debug("Entering Job constructor.")
+
+        self.params = params
+
         self.rsync_base_options = ['--stats','--chmod=ugo=rwX','--compress']
         if not utils.config['is_pythonw']:
             self.rsync_base_options += ['--verbose']
-
-
-        logger.info("Initializing Job")
-
-        self.params = params
 
         filename, fileext = os.path.splitext(os.path.basename(params['job_file']))
         if 'name' not in self.params:
