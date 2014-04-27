@@ -85,7 +85,7 @@ def shell_execute(command):
     :type command: str
     :returns: 2-tuple with return code and stdout.
     """
-    process = sp.Popen(command, stdout=sp.PIPE, stderr=sp.PIPE, stdin=sp.PIPE)
+    process = sp.Popen(command, stdout=sp.PIPE, stderr=sp.PIPE, stdin=sp.PIPE, startupinfo=config['subprocess_startupinfo'])
 
     stdout = process.communicate()[0].strip()
     return (process.returncode, stdout)
@@ -178,7 +178,9 @@ class Rsync(sp.Popen):
         self.rsync_call = [config['rsync_bin']]+options+[source,target]
         logger.debug("rsync process created from call {}".format(' '.join(self.rsync_call)))
         logger.info("Starting rsync process.")
-        super(Rsync, self).__init__(self.rsync_call,stdout=sp.PIPE, stderr=sp.PIPE, stdin=sp.PIPE,bufsize=1)
+        super(Rsync, self).__init__(self.rsync_call,
+                                    stdout=sp.PIPE, stderr=sp.PIPE, stdin=sp.PIPE,
+                                    bufsize=1,startupinfo=config['subprocess_startupinfo'])
 
         self.output_buffer = collections.deque(maxlen=20)
         self.threads = [
