@@ -20,18 +20,19 @@ logger = logging.getLogger(__name__)
 
 
 def initialize():
+    # subprocess flags 
+    config['is_pythonw'] = (os.path.split(os.path.splitext(sys.executable)[0])[1] == "pythonw")
+    startupinfo = sp.STARTUPINFO()
+    startupinfo.dwFlags |= sp.STARTF_USESHOWWINDOW
+    startupinfo.wShowWindow = sp.SW_HIDE
+    config['subprocess_startupinfo'] = startupinfo
+
     # enumerate net drives
     enumerate_net_drives()
 
     # parse global settings file
     read_config(default_cfg='default.josync-config',user_cfg='user.josync-config')
 
-    # subprocess flags 
-    config['is_pythonw'] = (os.path.split(os.path.splitext(sys.executable)[0])[1] == "pythonw")
-    startupinfo = sp.STARTUPINFO()
-    startupinfo.dwFlags |= sp.STARTF_USESHOWWINDOW
-    startupinfo.wShowWindow = sp.SW_HIDE
-    utils.config['subprocess_startupinfo'] = startupinfo
 
 
 def read_config(default_cfg,user_cfg):
@@ -128,7 +129,7 @@ def volume_shadow(drive):
     vshadow_returncode, vshadow_output = shell_execute([vshadow, '-p', '-nw', drive])
     guidmatch = re.search(r"\* SNAPSHOT ID = (\{[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}\})", vshadow_output)
     if not guidmatch or not vshadow_returncode == 0:
-        raise OSError("vhadow did not produce a GUID. Return code: {}".format(vshadow_returncode))
+        raise OSError("vhadow did not produce a GUID. Return code: {} (hint: try running as administrator)".format(vshadow_returncode))
     shadow_guid = guidmatch.group(1)
     logger.debug("Shadow copy GUID: {}".format(shadow_guid))
 
@@ -291,3 +292,73 @@ class JsonSyntaxError(Exception):
 
 class JobDescriptionKeyError(Exception):
     pass
+
+class JobDescriptionValueError(Exception):
+    pass
+
+
+class FailureNotificator(object):
+    """Keeps track of when the last time a job was successfully run.
+
+    Notifies user per e-mail."""
+    def __init__(self, job_file):
+        super(FailureNotificator, self).__init__()
+
+        self.job_file = job_file
+
+        logger.info("Creating FailureNotificator from {}.".format(job_file))
+        with open(job_file) as f:
+            params = json.loads(f.read())
+
+        try:
+            self.notification_options = {
+                'always': False
+                }
+            self.notification_options.update(params['failure_notification'])
+            if not 'e-mail' in self.notification_options:
+                raise JobDescriptionKeyError('e-mail')
+        except KeyError:
+            self.notification_options = None
+
+        filename, fileext = os.path.splitext(os.path.basename(job_file))
+        self.last_successful_run = None
+        self.last_successful_run_filename = filename + ".josync-job-success"
+        if os.path.isfile(self.last_successful_run_filename):
+            self.last_successful_run = get_file_modification_date(self.last_successful_run_filename)
+
+
+    def notify(self):
+        """Check if conditions for notification are fulfilled, and send e-mail.
+        """
+        if not self.notification_options:
+            return
+
+        will_send = self.notification_options["always"]
+
+        if not will_send and self.last_successful_run == None:
+            logger.warning("Failure notification not sent because no previous successful run detected.")
+            return
+
+        if not will_send and 'hours_since_success' in self.notification_options:
+            hours_since_success = (datetime.datetime.now()-self.last_successful_run).total_seconds()/3600.
+            if hours_since_success > self.notification_options["hours_since_success"]:
+                will_send = True
+            else:
+                logger.info("Failure notification not sent, because time elapsed since last successful run was only {} hour(s)".format(hours_since_success))
+
+        if will_send:
+            body = """Your Josync backup job {} have failed and triggered this e-mail notification.
+
+Please check the Josync logs for details.
+
+""".format(self.job_file)
+            logger.info("Sending failure notification e-mail.")
+            send_email(self.notification_options["e-mail"], "Josync backup job {} failed.".format(self.job_file),body)
+
+    def record_successful_run(self):
+        """ Create an empty .josync-job-success file to mark a successful run.
+        """
+        if not self.notification_options:
+            return
+        
+        open(self.last_successful_run_filename, 'w').close()

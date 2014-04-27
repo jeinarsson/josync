@@ -9,7 +9,6 @@ import subprocess as sp
 import jobs
 import utils
 
-
 logger = logging.getLogger(__name__)
 run_logger = logging.getLogger('josync_run')
 
@@ -36,32 +35,37 @@ def main():
 
     # parse job file and run job
     try:
+        if args.notifications:
+            failure_notificator = utils.FailureNotificator(jobfile)
+
         job = jobs.create_job_from_file(jobfile)
-		run_logger.info("A josync job was created from {}. No errors encountered.".format(jobfile))
+        run_logger.info("A josync job was created from {}. No errors encountered.".format(jobfile))
         job.run()
-    	try:
-        	transferred = job.stats['file_size_transferred']/1024.0
-        	total = job.stats['tot_file_size']/1024.0
-        	run_logger.info("A josync job was run from {}. {:.1f} of {:.1f} kB updated ({:.1f} %). No errors encountered."\
-            					.format(jobfile,transferred,total,100*transferred/total))
-    	except KeyError as e:
-        	run_logger.info("A josync job was run from {}. No errors were encountered, but stats could not retrieved".format(jobfile))
+        try:
+            transferred = job.stats['file_size_transferred']/1024.0
+            total = job.stats['tot_file_size']/1024.0
+            run_logger.info("A josync job was run from {}. {:.1f} of {:.1f} kB updated ({:.1f} %). No errors encountered."\
+                                .format(jobfile,transferred,total,100*transferred/total))
+        except KeyError as e:
+            run_logger.info("A josync job was run from {}. No errors were encountered, but stats could not retrieved".format(jobfile))
 
         if args.notifications:
             job.record_successful_run()
 
-    except JobDescriptionKeyError as e:
+    except utils.JobDescriptionKeyError as e:
         run_logger.error("The required job parameter '{}' was not found in the job file.".format(e))
-    except JsonSyntaxError as e:
+    except utils.JobDescriptionValueError as e:
+        run_logger.error("Error in job description: {}".format(e))
+    except utils.JsonSyntaxError as e:
         run_logger.exception(e)
-    except TargetNotFoundException as e:
+    except utils.TargetNotFoundError as e:
         run_logger.error("The target directory {} does not exist.".format(e))
         if args.notifications:
-            job.failure_notification()
+            failure_notificator.notify()
     except Exception as e:
         run_logger.exception(e)
         if args.notifications:
-            job.failure_notification()
+            failure_notificator.notify()
 
     logger.info("Session ended.")
 
