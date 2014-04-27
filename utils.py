@@ -266,3 +266,13 @@ def send_email(msg_address, msg_subject, msg_body):
             logger.info("Could not send e-mail.")
         if s:
             s.quit()
+
+
+class TargetNotFoundError(Exception):
+    pass
+
+class JsonSyntaxError(Exception):
+    pass
+
+class JobDescriptionKeyError(Exception):
+    pass
