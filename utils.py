@@ -5,8 +5,12 @@ from contextlib import contextmanager
 import re
 import tempfile
 import logging
+import datetime
+import smtplib
+from email.mime.text import MIMEText
+from email.header import Header
 
-
+version = "0.0"
 config = {}
 net_drives = {}
 logger = logging.getLogger(__name__)
@@ -165,3 +169,51 @@ def is_net_drive(drive):
     :returns: True if drive is a net drive (is in net_drives list)
     '''
     return drive.lower() in net_drives.keys()
+
+
+def get_file_modification_date(filename):
+    """Read 'last modified' metadata of file
+
+    :param filename: filename (with path)
+    :type filename: str
+    :returns: Datetime object with last modified datetime
+    """
+    t = os.path.getmtime(filename)
+    return datetime.datetime.fromtimestamp(t)
+
+def send_email(msg_address, msg_subject, msg_body):
+    """Sends an e-mail notification using SMTP settings in config.
+
+:param msg_subject: Message subject.
+:type msg_subject: str
+:param msg_body: Message body.
+:type msg_body: str
+:param user_email: E-mail to send notification to.
+:type user_email: str
+"""
+    try:
+        s = None
+        success = False
+        smtp = config['smtp']
+
+        msg = MIMEText(msg_body, 'plain', 'utf-8')
+        msg['Subject'] = Header(msg_subject, 'utf-8')
+        msg['From'] = smtp['from_address']
+        msg['To'] = msg_address
+
+        s = smtplib.SMTP_SSL(smtp['host'], smtp['port'], timeout=10)
+
+        logger.debug("Attempting to log in to {}:{} as {} and send e-mail to {}.".format(smtp['host'],smtp['port'],smtp['username'], msg_address))
+        s.login(smtp['username'], smtp['password'])
+        s.sendmail(msg['From'], msg['To'], msg.as_string())
+        success = True
+        logger.info("E-mail successfully sent")
+    except KeyError as e:
+        logger.error("Could not find required setting in config: {}".format(str(e)))
+    except Exception as e:
+        logger.exception(e)
+    finally:
+        if not success:
+            logger.info("Could not send e-mail.")
+        if s:
+            s.quit()

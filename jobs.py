@@ -3,6 +3,7 @@ import json
 import os
 import logging
 import subprocess as sp
+import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -15,13 +16,21 @@ class Job(object):
         self.rsync_options = []
 
         logger.info("Initializing Job")
-        self.params = params
 
+        self.params = {
+            'failure_notification': None
+        }
+        self.params.update(params)
+
+        filename, fileext = os.path.splitext(os.path.basename(params['job_file']))
         if 'name' not in self.params:
-            filename,filext = os.path.splitext(os.path.basename(params['job_file']))
-            self.params['name'] =filename
+            self.params['name'] = filename
 
-        # Check config parameters
+        self.last_successful_run = None
+        self.success_file = filename + ".josync-job-success"
+        if os.path.isfile(self.success_file):
+            self.last_successful_run = utils.get_file_modification_date(self.success_file)
+
         self.target = self.params['target']
 
         target_drive, target_path = os.path.splitdrive(self.target)
@@ -69,6 +78,50 @@ class Job(object):
     def run(self):
         raise NotImplementedError("Run method of job was not implemented.")
 
+    def failure_notification(self):
+
+        if not 'failure_notification' in self.params:
+            return
+
+
+        notification_options = {
+            "always": False
+        }
+        notification_options.update(self.params['failure_notification'])
+
+        if not 'e-mail' in notification_options:
+            raise ValueError("Notifications enabled, but no e-mail address specified in job file.")
+            return
+
+        will_send = notification_options["always"]
+
+        if not will_send and self.last_successful_run == None:
+            logger.warning("Failure notification not sent because no previous successful run detected.")
+            return
+
+        if not will_send and 'hours_since_success' in notification_options:
+            hours_since_success = (datetime.datetime.now()-self.last_successful_run).total_seconds()/3600.
+            if hours_since_success > notification_options["hours_since_success"]:
+                will_send = True
+            else:
+                logger.info("Failure notification not sent, because time elapsed since last successful run was only {} hour(s)".format(hours_since_success))
+
+        if will_send:
+            body = """
+
+                    Your Josync backup job {} have failed and triggered this e-mail notification.
+
+                    Please check the Josync logs for details.
+
+                """.format(self.params['name'])
+            logger.info("Sending failure notification e-mail.")
+            utils.send_email(notification_options["e-mail"], "Josync backup job {} failed.".format(self.params['name']),body)
+
+    def record_successful_run(self):
+        if not 'failure_notification' in self.params:
+            return
+        
+        open(self.success_file, 'w').close()
 
     def add_excludes(self,excludes):
         """Add a list of strings to rsync_options as excludes.
