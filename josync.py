@@ -39,7 +39,7 @@ def main():
             failure_notificator = utils.FailureNotificator(jobfile)
 
         job = jobs.create_job_from_file(jobfile)
-        run_logger.info("A josync job was created from {}. No errors encountered.".format(jobfile))
+        logger.info("A josync job was created from {}.".format(jobfile))
         job.run()
         try:
             transferred = job.stats['file_size_transferred']/1024.0

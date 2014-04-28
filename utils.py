@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 
 def initialize():
-    # subprocess flags 
+    # subprocess flags
     config['is_pythonw'] = (os.path.split(os.path.splitext(sys.executable)[0])[1] == "pythonw")
     startupinfo = sp.STARTUPINFO()
     startupinfo.dwFlags |= sp.STARTF_USESHOWWINDOW
@@ -85,10 +85,8 @@ def get_cygwin_path(path):
     :param path: The windows path to convert.
     :type path: str
     :returns: str -- The cygwin path to ``path``.
-    :raises: ValueError, IOError
+    :raises: IOError
     """
-    if not os.path.exists(path):
-        raise ValueError("The given path does not exist. Path given: {}.".format(path))
     cygpath = config['cygpath_bin']
     returncode,cygwin_path = shell_execute([cygpath,path])
     if returncode != 0:
@@ -360,5 +358,5 @@ Please check the Josync logs for details.
         """
         if not self.notification_options:
             return
-        
+
         open(self.last_successful_run_filename, 'w').close()
