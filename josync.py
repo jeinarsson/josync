@@ -39,15 +39,14 @@ def main():
             failure_notifier = utils.FailureNotifier(jobfile)
 
         job = jobs.create_job_from_file(jobfile)
-        logger.info("A josync job was created from {}.".format(jobfile))
         job.run()
         try:
             transferred = job.stats['file_size_transferred']/1024.0
             total = job.stats['tot_file_size']/1024.0
-            run_logger.info("A josync job was run from {}. {:.1f} of {:.1f} kB updated ({:.1f} %). No errors encountered."\
+            run_logger.info("Josync job {} successfully run. {:.1f} of {:.1f} kB updated ({:.1f} %)."\
                                 .format(jobfile,transferred,total,100*transferred/total))
         except KeyError as e:
-            run_logger.info("A josync job was run from {}. No errors were encountered, but stats could not retrieved".format(jobfile))
+            run_logger.info("Josync job {} successfully run, however, stats could not be retrieved".format(jobfile))
 
         if args.notifications:
             failure_notifier.record_successful_run()
@@ -63,6 +62,7 @@ def main():
         if args.notifications:
             failure_notifier.notify()
     except Exception as e:
+        run_logger.info("Josync job {} failed with an exception:".format(jobfile))
         run_logger.exception(e)
         if args.notifications:
             failure_notifier.notify()
