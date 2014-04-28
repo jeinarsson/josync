@@ -58,7 +58,7 @@ def main():
     except utils.JsonSyntaxError as e:
         run_logger.exception(e)
     except utils.TargetNotFoundError as e:
-        run_logger.error("The target directory {} does not exist.".format(e))
+        run_logger.error("The target directory {} does not exist for job {}.".format(e,jobfile))
         if args.notifications:
             failure_notifier.notify()
     except Exception as e:
