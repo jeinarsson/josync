@@ -318,7 +318,7 @@ class FailureNotifier(object):
         except KeyError:
             self.notification_options = None
 
-        filename, fileext = os.path.splitext(os.path.basename(job_file))
+        filename, fileext = os.path.splitext(job_file)
         self.last_successful_run = None
         self.last_successful_run_filename = filename + ".josync-job-success"
         if os.path.isfile(self.last_successful_run_filename):
