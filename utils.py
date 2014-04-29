@@ -194,7 +194,7 @@ class Rsync(sp.Popen):
         # Construct rsync call and create process.
         options = options if options is not None else []
         if config['dry_run']:
-            options += '--dry-run'
+            options += ['--dry-run']
         self.rsync_call = [config['rsync_bin']]+options+[source,target]
         logger.debug("rsync process created from call {}".format(' '.join(self.rsync_call)))
         logger.info("Starting rsync process.")
