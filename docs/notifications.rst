@@ -4,7 +4,7 @@ Failure notifications
 
 Josync can send an e-mail to you if a job fails, for example if the sync target is not found, or is full.
 
-The e-mail receipient 
+The e-mail receipient and notification trigger is configured per job, in the ``.josync-job``-file. The required settings for sending e-mail must be configured in ``default.josync-config``.
 
 Configuring notification for a job
 ----------------------------------
@@ -46,3 +46,8 @@ In order to send e-mail, Josync requires an SMTP-server. The SMTP settings goes 
         }
     }
 
+You can test your settings by running::
+
+    python testmail.py your@address.com
+
+This command will try to send an e-mail to ``your@address.com`` with the Josync settings.

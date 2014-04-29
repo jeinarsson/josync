@@ -311,14 +311,22 @@ class FailureNotifier(object):
             params = json.loads(f.read())
 
         try:
-            self.notification_options = {
-                'always': False
-                }
-            self.notification_options.update(params['failure_notification'])
-            if not 'e-mail' in self.notification_options:
-                raise JobDescriptionKeyError('e-mail')
+            notification_options = params['failure_notification']
         except KeyError:
-            self.notification_options = None
+            self.enabled = False
+
+        try:
+            self.email = notification_options["e-mail"]
+        except KeyError e:
+            raise JobDescriptionKeyError(e.message)
+
+        self.enabled = True
+
+        try:
+            self.hours_since_success = self.notification_options["hours_since_success"]
+            self.always_send = False
+        except KeyError:
+            self.always_send = True
 
         filename, fileext = os.path.splitext(job_file)
         self.last_successful_run = None
@@ -330,18 +338,18 @@ class FailureNotifier(object):
     def notify(self):
         """Check if conditions for notification are fulfilled, and send e-mail.
         """
-        if not self.notification_options:
+        if not self.enabled:
             return
 
-        will_send = self.notification_options["always"]
+        will_send = self.always_send
 
         if not will_send and self.last_successful_run == None:
             logger.warning("Failure notification not sent because no previous successful run detected.")
             return
 
-        if not will_send and 'hours_since_success' in self.notification_options:
+        if not will_send and not self.hours_since_success is None:
             hours_since_success = (datetime.datetime.now()-self.last_successful_run).total_seconds()/3600.
-            if hours_since_success > self.notification_options["hours_since_success"]:
+            if hours_since_success > self.hours_since_success:
                 will_send = True
             else:
                 logger.info("Failure notification not sent, because time elapsed since last successful run was only {} hour(s)".format(hours_since_success))
@@ -353,7 +361,7 @@ Please check the Josync logs for details.
 
 """.format(self.job_file)
             logger.info("Sending failure notification e-mail.")
-            send_email(self.notification_options["e-mail"], "Josync backup job {} failed.".format(self.job_file),body)
+            send_email(self.email, "Josync backup job {} failed.".format(self.job_file),body)
 
     def record_successful_run(self):
         """ Create an empty .josync-job-success file to mark a successful run.
