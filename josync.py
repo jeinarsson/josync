@@ -35,6 +35,7 @@ def main():
     if not jobfile.endswith('.josync-job'):
         jobfile = jobfile + '.josync-job'
 
+    logger.info("************************************************************")
     logger.info("Session started. Josync version {}.".format(utils.version))
     if args.notifications:
         logger.info("Failure notifications are enabled.")

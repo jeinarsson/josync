@@ -36,7 +36,7 @@ In order to send e-mail, Josync requires an SMTP-server. The SMTP settings goes 
     {
         "cygwin_bin_path": ".",
         "vshadow_bin": "./vshadow.exe",
-        
+
         "smtp": {
             "host": "mysmtp.com",
             "port": 465,
