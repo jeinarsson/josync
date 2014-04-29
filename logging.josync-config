@@ -24,7 +24,7 @@
             "formatter": "timestamp",
             "maxBytes": 1048576,
             "backupCount": 1,
-            "filename": "{}.josync-job-log",
+            "filename": "{}.josync-log",
             "encoding": "utf8",
             "mode": "a"
         },
