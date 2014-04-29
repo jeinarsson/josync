@@ -6,6 +6,8 @@ Josync can send an e-mail to you if a job fails, for example if the sync target 
 
 The e-mail receipient and notification trigger is configured per job, in the ``.josync-job``-file. The required settings for sending e-mail must be configured in ``default.josync-config``.
 
+If you have configured failure notifications but would like to run Josync with notifications disabled, use the command line option ``--nonotifications``.
+
 Configuring notification for a job
 ----------------------------------
 
