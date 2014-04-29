@@ -2,4 +2,7 @@
 Command-line options
 ********************
 
-.. program-output:: python -V
+.. argparse::
+    :module: josync
+    :func: get_parser
+    :prog: josync

@@ -12,13 +12,17 @@ import utils
 logger = logging.getLogger(__name__)
 main_logger = logging.getLogger('josync_run')
 
-def main():
+def get_parser():
     parser = argparse.ArgumentParser(description='Scripted backup using rsync on Windows.')
     parser.add_argument('jobfile',help='path to job file specifying josync job',type=str)
     parser.add_argument('--debug',help='set all loggers to debug level',action='store_true')
-    parser.add_argument('--nonotifications',help='disable notifications on backup failure',action='store_false')
+    parser.add_argument('--nonotifications',help='disable notifications on backup failure',action='store_true')
     parser.add_argument('--dry-run',help='send --dry-run to rsync and do not actually transfer any files',action='store_true')
 
+    return parser
+
+def main():
+    parser = get_parser()
     args = parser.parse_args()
     jobfile = args.jobfile
 
