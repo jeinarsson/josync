@@ -21,6 +21,7 @@ Contents
 
    getting_started
    jobs
+   notifications
    logging
    authors
    reference

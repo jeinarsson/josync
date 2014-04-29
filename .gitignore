@@ -1,4 +1,4 @@
-*.pyc
+﻿*.pyc
 *.pyo
 user.josync-config
 *.josync-job*
@@ -9,3 +9,5 @@ user.josync-config
 *.exe
 *.log
 SETVAR.cmd
+
+.DS_Store
