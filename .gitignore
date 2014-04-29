@@ -1,8 +1,9 @@
-*.pyc
+﻿*.pyc
 *.pyo
 user.josync-config
-*.josync-job
+*.josync-job*
 *.josync-job-success
+*.josync-log
 !*example.josync-job
 *test.py
 *.exe
