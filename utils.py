@@ -323,8 +323,11 @@ class FailureNotifier(object):
         self.enabled = True
 
         try:
-            self.hours_since_success = self.notification_options["hours_since_success"]
-            self.always_send = False
+            self.hours_since_success = notification_options["hours_since_success"]
+            if self.hours_since_success == 0:
+                self.always_send = True
+            else:
+                self.always_send = False
         except KeyError:
             self.always_send = True
 
@@ -366,7 +369,7 @@ Please check the Josync logs for details.
     def record_successful_run(self):
         """ Create an empty .josync-job-success file to mark a successful run.
         """
-        if not self.notification_options:
+        if not self.enabled:
             return
 
         open(self.last_successful_run_filename, 'w').close()
