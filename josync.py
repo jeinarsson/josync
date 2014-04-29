@@ -17,6 +17,7 @@ def main():
     parser.add_argument('jobfile',help='path to job file specifying josync job',type=str)
     parser.add_argument('--debug',help='set all loggers to debug level',action='store_true')
     parser.add_argument('--notifications',help='enable notifications on backup failure (if configured in job file)',action='store_true')
+    parser.add_argument('--dry-run',help='send --dry-run to rsync and do not actually transfer any files',action='store_true')
 
     args = parser.parse_args()
 
@@ -32,6 +33,7 @@ def main():
         logger.info("Failure notifications are enabled.")
 
     utils.initialize()
+    utils.config['dry_run'] = args.dry_run
 
     # parse job file and run job
     try:
