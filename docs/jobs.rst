@@ -6,25 +6,7 @@ This version of Josync provides two types of jobs:
 	1. sync
 	2. add
 
-
-Example of failure notification settings::
-
-    "failure_notification": {
-        "always": false,
-        "hours_since_success": 4,
-        "e-mail": "me@domain.com"
-    }
-
-Requires smtp options in config file::
-
-    "smtp": {
-        "host": "mysmtp.com",
-        "port": 465,
-        "username": "username",
-        "password": "password",
-        "from_address": "me@domain.com"
-    }
-
+All job types support optional :doc:`notifications`.
 
 sync
 ====

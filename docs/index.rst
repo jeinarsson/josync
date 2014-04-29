@@ -23,6 +23,7 @@ Contents
    jobs
    notifications
    logging
+   cli
    authors
    reference
 
