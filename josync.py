@@ -10,7 +10,7 @@ import jobs
 import utils
 
 logger = logging.getLogger(__name__)
-run_logger = logging.getLogger('josync_run')
+main_logger = logging.getLogger('josync_run')
 
 def main():
     parser = argparse.ArgumentParser(description='Scripted backup using rsync on Windows.')
@@ -20,8 +20,15 @@ def main():
     parser.add_argument('--dry-run',help='send --dry-run to rsync and do not actually transfer any files',action='store_true')
 
     args = parser.parse_args()
-
     jobfile = args.jobfile
+
+    with open('default.josync-logging') as f:
+        log_config = json.loads(f.read())
+    log_config['handlers']['details_file_handler']['filename'] = \
+        log_config['handlers']['details_file_handler']['filename'].format(jobfile.replace('.josync-job',''))
+    logging.config.dictConfig(log_config)
+    logging.getLogger().setLevel(logging.INFO)
+
     if args.debug:
         logging.getLogger().setLevel(logging.DEBUG)
 
@@ -45,27 +52,27 @@ def main():
         try:
             transferred = job.stats['file_size_transferred']/1024.0
             total = job.stats['tot_file_size']/1024.0
-            run_logger.info("Josync job {} successfully run. {:.1f} of {:.1f} kB updated ({:.1f} %)."\
+            main_logger.info("Josync job {} successfully run. {:.1f} of {:.1f} kB updated ({:.1f} %)."\
                                 .format(jobfile,transferred,total,100*transferred/total))
         except KeyError as e:
-            run_logger.info("Josync job {} successfully run, however, stats could not be retrieved".format(jobfile))
+            main_logger.info("Josync job {} successfully run, however, stats could not be retrieved".format(jobfile))
 
         if args.notifications:
             failure_notifier.record_successful_run()
 
     except utils.JobDescriptionKeyError as e:
-        run_logger.error("The required job parameter '{}' was not found in the job file.".format(e))
+        main_logger.error("The required job parameter '{}' was not found in the job file.".format(e))
     except utils.JobDescriptionValueError as e:
-        run_logger.error("Error in job description: {}".format(e))
+        main_logger.error("Error in job description: {}".format(e))
     except utils.JsonSyntaxError as e:
-        run_logger.exception(e)
+        main_logger.error("One of the JSON configuration files could not be parsed: {}".format(e))
     except utils.TargetNotFoundError as e:
-        run_logger.error("The target directory {} does not exist for job {}.".format(e,jobfile))
+        main_logger.error("The target directory {} does not exist for job {}.".format(e,jobfile))
         if args.notifications:
             failure_notifier.notify()
     except Exception as e:
-        run_logger.info("Josync job {} failed with an exception:".format(jobfile))
-        run_logger.exception(e)
+        main_logger.error("Josync job {} failed with an exception: {}".format(jobfile,e))
+        logger.exception(e)
         if args.notifications:
             failure_notifier.notify()
 
@@ -73,9 +80,4 @@ def main():
 
 
 if __name__ == '__main__':
-    with open('default.josync-logging') as f:
-        log_config = json.loads(f.read())
-    logging.config.dictConfig(log_config)
-    logging.getLogger().setLevel(logging.INFO)
-
     main()
