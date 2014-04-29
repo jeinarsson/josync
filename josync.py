@@ -22,7 +22,7 @@ def main():
     args = parser.parse_args()
     jobfile = args.jobfile
 
-    with open('default.josync-logging') as f:
+    with open('logging.josync-config') as f:
         log_config = json.loads(f.read())
     log_config['handlers']['details_file_handler']['filename'] = \
         log_config['handlers']['details_file_handler']['filename'].format(jobfile.replace('.josync-job',''))
