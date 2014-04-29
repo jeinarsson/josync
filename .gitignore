@@ -8,3 +8,5 @@ user.josync-config
 *.exe
 *.log
 SETVAR.cmd
+
+.DS_Store
