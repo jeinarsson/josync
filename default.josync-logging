@@ -22,7 +22,7 @@
             "class": "logging.FileHandler",
             "level": "INFO",
             "formatter": "timestamp",
-            "filename": "josync.log",
+            "filename": "josync2.log",
             "encoding": "utf8",
             "mode": "w"
         },
@@ -31,7 +31,7 @@
             "class": "logging.handlers.RotatingFileHandler",
             "level": "INFO",
             "formatter": "timestamp",
-            "filename": "josync_runs.log",
+            "filename": "josync.log",
             "maxBytes": 1048576,
             "backupCount": 1,
             "encoding": "utf8",
