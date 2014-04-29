@@ -317,7 +317,7 @@ class FailureNotifier(object):
 
         try:
             self.email = notification_options["e-mail"]
-        except KeyError e:
+        except KeyError as e:
             raise JobDescriptionKeyError(e.message)
 
         self.enabled = True
