@@ -314,6 +314,7 @@ class FailureNotifier(object):
             notification_options = params['failure_notification']
         except KeyError:
             self.enabled = False
+            logger.info('No notification settings were found. Disabling notifications.')
             return
 
         try:
