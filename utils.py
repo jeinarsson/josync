@@ -314,6 +314,7 @@ class FailureNotifier(object):
             notification_options = params['failure_notification']
         except KeyError:
             self.enabled = False
+            return
 
         try:
             self.email = notification_options["e-mail"]
