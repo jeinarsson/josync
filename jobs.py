@@ -58,6 +58,8 @@ class Job(object):
                 else:
                     self.sources[drive] = [relative_source]
 
+        self.stats = {}
+
 
 
     def run(self):
@@ -96,12 +98,16 @@ class Job(object):
             "tot_file_size": re.compile("Total file size:\s+(\d+)"),
             "file_size_transferred": re.compile("Total transferred file size:\s+(\d+)")
         }
-        self.stats = {}
+        
         for line in rsync_process.output_buffer:
             for key,pattern in pattern_dict.items():
                 match = pattern.match(line)
                 if match:
-                    self.stats[key] = float(match.group(1))
+                    value = float(match.group(1))
+                    if key in self.stats:
+                        self.stats[key] += value
+                    else:
+                        self.stats[key] = value
 
 
 class BaseSyncJob(Job):
