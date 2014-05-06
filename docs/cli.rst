@@ -4,8 +4,6 @@ Command-line options
 
 usage: ``josync.py [-h] [--debug] [--nonotifications] [--dry-run] jobfile``
 
-Scripted backup using rsync on Windows.
-
 positional arguments:
   jobfile            path to job file specifying josync job
 
