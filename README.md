@@ -6,6 +6,8 @@ Documentation at http://josync.readthedocs.org
 
 Please post any bugs you experience in the issue tracker!
 
+Josync is released under a MIT License (see LICENSE.md)
+
 # Why?
 
 We wanted a simple, scriptable backup on Windows for personal use.

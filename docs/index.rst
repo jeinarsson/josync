@@ -5,7 +5,7 @@ josync
 Josync is a light-weight Python application for Windows backup using rsync/cygwin, using shadow copies for read access to open files. Josync is open-source, come join us on GitHub https://github.com/jeinarsson/josync
 
 Features:
-   * open-source
+   * open-source (MIT License, see :doc:`authors`)
    * backup jobs are specified in minimal JSON configuration files,
    * e-mail failure notifications,
    * extensive and configurable logging,
