@@ -17,7 +17,7 @@ Running Josync 1.x requires, in addition to Josync itself,
 
 	* A copy of ``vshadow.exe`` for your operating system.
 		* Either (recommended)
-			* download a zip with binaries from the GitHub 1.x release https://github.com/jeinarsson/josync/releases and find the version appropriate to your OS.
+			* download the zip with binaries from the 1.0 release at https://github.com/jeinarsson/josync/releases/tag/1.0 and find the version appropriate for your OS.
 		* Or 
 			* install the Windows SDK for your Windows version and find ``vshadow.exe`` from the Samples section.
 
@@ -28,7 +28,7 @@ Getting Josync
 ==============
 
 Either
-	* Download the latest 1.x release zip file from https://github.com/jeinarsson/josync/releases
+	* Download the latest 1.x release zip file from https://github.com/jeinarsson/josync/releases/
 Or, if you're familiar with git, checkout the ``stable_1`` branch.
 	* ``git clone https://github.com/jeinarsson/josync.git -b stable_1``
 
