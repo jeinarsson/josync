@@ -75,6 +75,16 @@ Modify the job description to make sense on your system, and try running this jo
 	python josync.py syncjob-example
 
 
+Scheduling
+==========
+
+When we schedule Josync to run using the built-in Task Scheduler in Windows, we execute with ``pythonw.exe`` instead of ``python.exe``. The only difference is that ``pythonw.exe`` does not open a command-line window, but runs quietly in the background. The "Action" of the task can look like this (click for larger version):
+
+.. image:: _static/task_scheduler.png
+	:scale: 50%
+	:width: 1200px
+*Screenshot of Task Scheduler*
+
 Next steps
 ==========
 
