@@ -8,6 +8,12 @@ Please post any bugs you experience in the issue tracker!
 
 Josync is released under a MIT License (see LICENSE.md)
 
+# This is the Stable 1.x branch
+
+In this branch, only bugfixes for version 1 are allowed.
+
+For development, checkout branch "develop".
+
 # Why?
 
 We wanted a simple, scriptable backup on Windows for personal use.
