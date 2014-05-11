@@ -2,7 +2,7 @@
 
 Josync is a light-weight Python application for backup using rsync/cygwin, using shadow copies for read access to open files.
 
-Documentation at http://josync.readthedocs.org/stable_1
+Documentation at http://josync.readthedocs.org/en/stable_1/
 
 Please post any bugs you experience in the issue tracker!
 

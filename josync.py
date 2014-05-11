@@ -75,6 +75,10 @@ def main():
         main_logger.error("The target directory {} does not exist for job {}.".format(e,jobfile))
         if not args.nonotifications:
             failure_notifier.notify()
+    except utils.VShadowError as e:
+        main_logger.error("vshadow error: {}.".format(e))
+        if not args.nonotifications:
+            failure_notifier.notify()            
     except Exception as e:
         main_logger.error("Josync job {} failed with an exception: {}".format(jobfile,e))
         logger.exception(e)

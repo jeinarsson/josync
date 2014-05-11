@@ -3,6 +3,16 @@ Getting started
 ***************
 
 
+Get Josync
+==========
+
+Either
+	* Download the latest 1.x release zip file from https://github.com/jeinarsson/josync/releases/
+Or, if you're familiar with git, checkout the ``stable_1`` branch.
+	* ``git clone https://github.com/jeinarsson/josync.git -b stable_1``
+
+Josync consists of a few python ``.py`` files and a couple of JSON-formatted configuration files. The main file which you will use to run Josync is ``josync.py``. 
+
 Prerequisites
 =============
 
@@ -14,23 +24,19 @@ Running Josync 1.x requires, in addition to Josync itself,
 
 			Cygwin has its own installer offering many, many packages. For Josync, you need only to check ``rsync`` in the category ``net``. The installer will find the dependencies automatically.
 
+			You will shortly configure the path to the cygwin binaries in the configuration step below.
 
-	* A copy of ``vshadow.exe`` for your operating system.
+	* A copy of ``vshadow.exe`` for your operating system. 
 		* Either (recommended)
-			* download the zip with binaries from the 1.0 release at https://github.com/jeinarsson/josync/releases/tag/1.0 and find the version appropriate for your OS.
+			* download the zip with binaries from the 1.0 release at https://github.com/jeinarsson/josync/releases/tag/1.0 and find the version appropriate for your OS. Extract the appropriate file into the Josync folder and rename it ``vshadow.exe``.
+
 		* Or 
 			* install the Windows SDK for your Windows version and find ``vshadow.exe`` from the Samples section.
 
 
+		If you put ``vshadow.exe`` elsewhere, or give it another name, you will need to specify the new path in the configuration file in the next step.
 
 
-Getting Josync
-==============
-
-Either
-	* Download the latest 1.x release zip file from https://github.com/jeinarsson/josync/releases/
-Or, if you're familiar with git, checkout the ``stable_1`` branch.
-	* ``git clone https://github.com/jeinarsson/josync.git -b stable_1``
 
 Basic configuration
 ===================
@@ -74,6 +80,10 @@ Modify the job description to make sense on your system, and try running this jo
 	
 	python josync.py syncjob-example
 
+In addition to the output in the console, Josync writes log files. The file ``main.josync-log`` contains a brief entry for each run. In addition each job gets one dedicated log file with more details.
+
+	Note: Josync must run with Administrator privileges. This is required to create Shadow copies.
+
 
 Scheduling
 ==========
@@ -84,6 +94,10 @@ When we schedule Josync to run using the built-in Task Scheduler in Windows, we 
 	:scale: 50%
 	:width: 1200px
 *Screenshot of Task Scheduler*
+
+Check carefully that
+	* The working directory is correctly typed in (it must be the folder where ``josync.py`` resides)
+	* Your job is set to run with Administrator privileges
 
 Next steps
 ==========

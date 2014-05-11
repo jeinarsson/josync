@@ -13,7 +13,7 @@ import smtplib
 from email.mime.text import MIMEText
 from email.header import Header
 
-version = "0.0"
+version = "1.0"
 config = {}
 net_drives = {}
 logger = logging.getLogger(__name__)
@@ -127,7 +127,7 @@ def volume_shadow(drive):
     vshadow_returncode, vshadow_output = shell_execute([vshadow, '-p', '-nw', drive])
     guidmatch = re.search(r"\* SNAPSHOT ID = (\{[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}\})", vshadow_output)
     if not guidmatch or not vshadow_returncode == 0:
-        raise OSError("vhadow did not produce a GUID. Return code: {} (hint: try running as administrator)".format(vshadow_returncode))
+        raise VShadowError("vhadow did not create a shadow volume. Return code: {} (Hint: Try running as Administrator)".format(vshadow_returncode))
     shadow_guid = guidmatch.group(1)
     logger.debug("Shadow copy GUID: {}".format(shadow_guid))
 
@@ -139,7 +139,7 @@ def volume_shadow(drive):
         vshadow_returncode, vshadow_output = shell_execute([vshadow, '-el={},{}'.format(shadow_guid, shadow_mount_path)])
         if not vshadow_returncode == 0:
             logger.error("vshadow could not mount shadow copy with GUID {} at {}.\n{}".format(shadow_guid,shadow_mount_path,vshadow_output))
-            raise OSError("vshadow could not mount shadow copy: {}".format(shadow_guid))
+            raise VShadowError("vshadow could not mount shadow copy: {}".format(shadow_guid))
 
         logger.info("Shadow copy {} successfully created and mounted at {}".format(shadow_guid,shadow_mount_path))
 
@@ -151,7 +151,7 @@ def volume_shadow(drive):
         vshadow_returncode, vshadow_output = shell_execute([vshadow, '-ds={}'.format(shadow_guid)])
         if not vshadow_returncode == 0:
             logger.error("vshadow could not delete shadow copy with GUID {}.\n{}".format(shadow_guid,vshadow_output))
-            raise OSError("vshadow could not delete shadow copy: {}".format(shadow_guid))
+            raise VShadowError("vshadow could not delete shadow copy: {}".format(shadow_guid))
         os.rmdir(shadow_mount_path)
         os.rmdir(shadow_path)
         logger.info("Shadow copy {} of {} at {} successfully deleted".format(shadow_guid, drive, shadow_mount_path))
@@ -296,6 +296,9 @@ class JobDescriptionKeyError(Exception):
 class JobDescriptionValueError(Exception):
     pass
 
+class VShadowError(OSError):
+    pass
+
 
 class FailureNotifier(object):
     """Keeps track of when the last time a job was successfully run.
@@ -306,7 +309,7 @@ class FailureNotifier(object):
 
         self.job_file = job_file
 
-        logger.info("Creating FailureNotifier from {}.".format(job_file))
+        logger.debug("Creating FailureNotifier from {}.".format(job_file))
         with open(job_file) as f:
             params = json.loads(f.read())
 
