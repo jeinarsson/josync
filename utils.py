@@ -15,8 +15,29 @@ from email.header import Header
 
 version = "1.0"
 config = {}
-net_drives = {}
 logger = logging.getLogger(__name__)
+
+class CaseInsensitiveDict(collections.Mapping):
+    """Dictionary-like container with case-insensitive keys."""
+    def __init__(self, d=None):
+        self._d = {} if not d else d
+        self._s = dict((k.lower(), k) for k in self._d)
+    def __contains__(self, k):
+        return k.lower() in self._s
+    def __len__(self):
+        return len(self._s)
+    def __iter__(self):
+        return iter(self._s)
+    def __getitem__(self, k):
+        return self._d[self._s[k.lower()]]
+    def __setitem__(self, k, v):
+        self._s[k.lower()] = k
+        self._d[k] = v
+    def actual_key_case(self, k):
+        return self._s.get(k.lower())
+
+net_drives = CaseInsensitiveDict()
+
 
 
 def initialize():
@@ -173,7 +194,7 @@ def enumerate_net_drives():
         drive = match.group(2)
         unc = match.group(3)
         logger.debug("enumerate network drives matched: 1: \"{}\", 2: \"{}\", 3: \"{}\"".format(match.group(1),match.group(2),match.group(3)))
-        net_drives[drive.lower()] = unc
+        net_drives[drive] = unc
 
     logger.info("net use reported {} mapped drives".format(len(net_drives)))
     logger.debug("net use drives: {}".format(net_drives))
@@ -185,7 +206,7 @@ def is_net_drive(drive):
 
     :returns: True if drive is a net drive (is in net_drives list)
     '''
-    return drive.lower() in net_drives.keys()
+    return drive in net_drives
 
 
 class Rsync(sp.Popen):
