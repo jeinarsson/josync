@@ -93,17 +93,17 @@ class Job(object):
         # Total file size: 903119614118 bytes
         # Total transferred file size: 9046197739 bytes
         pattern_dict = {
-            "num_files": re.compile("Number of files:\s+(\d+)"),
-            "files_transferred": re.compile("Number of files transferred:\s+(\d+)"),
-            "tot_file_size": re.compile("Total file size:\s+(\d+)"),
-            "file_size_transferred": re.compile("Total transferred file size:\s+(\d+)")
+            "num_files": re.compile("Number of files:\s+([1-9][0-9]{0,2}(?:,[0-9]{3})*|\d+)\s"),
+            "files_transferred": re.compile("Number of files transferred:\s+([1-9][0-9]{0,2}(?:,[0-9]{3})*|\d+)\s"),
+            "tot_file_size": re.compile("Total file size:\s+([1-9][0-9]{0,2}(?:,[0-9]{3})*|\d+)\s"),
+            "file_size_transferred": re.compile("Total transferred file size:\s+([1-9][0-9]{0,2}(?:,[0-9]{3})*|\d+)\s")
         }
-        
+
         for line in rsync_process.output_buffer:
             for key,pattern in pattern_dict.items():
                 match = pattern.match(line)
                 if match:
-                    value = float(match.group(1))
+                    value = float(match.group(1).replace(',',''))
                     if key in self.stats:
                         self.stats[key] += value
                     else:
